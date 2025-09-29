@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Boeken Bibliotheek</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+        <h1>JavaScript Test Pagina</h1>
+        <div style="background: white; padding: 20px; border-radius: 10px; margin: 20px 0;">
+            <h2>Test Resultaten:</h2>
+            <div id="testResults"></div>
+            <button onclick="runTests()" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Run Tests</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function runTests() {
+            const resultsDiv = document.getElementById('testResults');
+            let results = [];
+            
+            try {
+                // Test 1: BookLibrary class bestaat
+                if (typeof BookLibrary !== 'undefined') {
+                    results.push('✅ BookLibrary class is geladen');
+                } else {
+                    results.push('❌ BookLibrary class niet gevonden');
+                }
+                
+                // Test 2: Library instantie wordt aangemaakt
+                const testLibrary = new BookLibrary();
+                if (testLibrary) {
+                    results.push('✅ BookLibrary instantie gemaakt');
+                } else {
+                    results.push('❌ BookLibrary instantie kon niet worden gemaakt');
+                }
+                
+                // Test 3: Belangrijke methodes bestaan
+                const methods = ['saveBooks', 'openChapterWriter', 'openChapterModal', 'openNotesModal'];
+                methods.forEach(method => {
+                    if (typeof testLibrary[method] === 'function') {
+                        results.push(`✅ Methode ${method} bestaat`);
+                    } else {
+                        results.push(`❌ Methode ${method} ontbreekt`);
+                    }
+                });
+                
+                // Test 4: localStorage test
+                try {
+                    localStorage.setItem('test', 'test');
+                    localStorage.removeItem('test');
+                    results.push('✅ localStorage werkt');
+                } catch (e) {
+                    results.push('❌ localStorage probleem: ' + e.message);
+                }
+                
+                // Test 5: Sample data test
+                if (testLibrary.books && Array.isArray(testLibrary.books)) {
+                    results.push(`✅ Books array aanwezig (${testLibrary.books.length} boeken)`);
+                } else {
+                    results.push('❌ Books array probleem');
+                }
+                
+            } catch (error) {
+                results.push('❌ JavaScript error: ' + error.message);
+            }
+            
+            resultsDiv.innerHTML = results.join('<br>');
+        }
+        
+        // Auto-run tests when page loads
+        window.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>

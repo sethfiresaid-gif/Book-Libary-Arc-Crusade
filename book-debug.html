@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Boeken Inhoud Check</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .debug-container { background: white; padding: 30px; border-radius: 8px; max-width: 1200px; margin: 0 auto; }
+        .book-debug { background: #f8f9fa; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #007bff; }
+        .chapter-debug { background: #fff; padding: 15px; margin: 10px 0; border-radius: 4px; border: 1px solid #ddd; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .warning { border-left-color: #ffc107; background: #fff3cd; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        .content-preview { max-height: 200px; overflow-y: auto; background: #f1f1f1; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.9rem; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .btn-danger { background: #dc3545; }
+        .btn-success { background: #28a745; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>📊 Boeken Inhoud Debug Tool</h1>
+        <p>Deze tool helpt je om problemen te identificeren met geïmporteerde boeken en lege hoofdstukken.</p>
+        
+        <button onclick="analyzeBooks()">🔍 Analyseer Alle Boeken</button>
+        <button onclick="showSampleFix()" class="btn-success">✨ Toon Voorbeeld Fix</button>
+        <button onclick="localStorage.clear(); location.reload()" class="btn-danger">🗑️ Wis Alle Data</button>
+        
+        <div id="stats" class="stats" style="display: none;"></div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function analyzeBooks() {
+            const resultsDiv = document.getElementById('results');
+            const statsDiv = document.getElementById('stats');
+            let html = '<h2>📚 Analyse Resultaten:</h2>';
+            
+            try {
+                const bookData = localStorage.getItem('bookLibraryData');
+                if (!bookData) {
+                    html += '<div class="book-debug error"><p>❌ Geen boeken gevonden in localStorage!</p></div>';
+                    resultsDiv.innerHTML = html;
+                    return;
+                }
+                
+                const books = JSON.parse(bookData);
+                
+                // Statistics
+                let totalBooks = books.length;
+                let booksWithChapters = 0;
+                let booksWithContent = 0;
+                let emptyChapters = 0;
+                let totalChapters = 0;
+                
+                books.forEach(book => {
+                    if (book.chapters && book.chapters.length > 0) {
+                        booksWithChapters++;
+                        totalChapters += book.chapters.length;
+                        
+                        let hasContent = false;
+                        book.chapters.forEach(chapter => {
+                            if (chapter.content && chapter.content.trim().length > 0) {
+                                hasContent = true;
+                            } else {
+                                emptyChapters++;
+                            }
+                        });
+                        
+                        if (hasContent) booksWithContent++;
+                    }
+                });
+                
+                // Show stats
+                statsDiv.style.display = 'grid';
+                statsDiv.innerHTML = `
+                    <div class="stat-card">
+                        <h3>${totalBooks}</h3>
+                        <p>Totaal Boeken</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${booksWithChapters}</h3>
+                        <p>Met Hoofdstukken</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${booksWithContent}</h3>
+                        <p>Met Inhoud</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${emptyChapters}</h3>
+                        <p>Lege Hoofdstukken</p>
+                    </div>
+                `;
+                
+                // Analyze each book
+                books.forEach((book, index) => {
+                    const hasChapters = book.chapters && book.chapters.length > 0;
+                    const chapterCount = hasChapters ? book.chapters.length : 0;
+                    
+                    let bookClass = 'book-debug';
+                    if (!hasChapters) {
+                        bookClass += ' warning';
+                    } else {
+                        const hasContent = book.chapters.some(ch => ch.content && ch.content.trim().length > 0);
+                        bookClass += hasContent ? ' success' : ' error';
+                    }
+                    
+                    html += `<div class="${bookClass}">`;
+                    html += `<h3>📖 ${book.title} (${book.status || 'unknown'})</h3>`;
+                    html += `<p><strong>Auteur:</strong> ${book.author || 'Onbekend'} | <strong>Hoofdstukken:</strong> ${chapterCount}</p>`;
+                    
+                    if (!hasChapters) {
+                        html += '<p>⚠️ <strong>Probleem:</strong> Geen hoofdstukken gevonden</p>';
+                        html += '<p><strong>Beschrijving:</strong></p>';
+                        html += `<div class="content-preview">${book.description || 'Geen beschrijving'}</div>`;
+                    } else {
+                        html += '<div style="margin-top: 15px;">';
+                        book.chapters.forEach((chapter, chIndex) => {
+                            const hasContent = chapter.content && chapter.content.trim().length > 0;
+                            const contentLength = hasContent ? chapter.content.trim().length : 0;
+                            
+                            html += `<div class="chapter-debug">`;
+                            html += `<strong>${chapter.title || 'Hoofdstuk ' + (chIndex + 1)}</strong> `;
+                            html += hasContent ? 
+                                `<span style="color: green;">✅ ${contentLength} karakters</span>` : 
+                                `<span style="color: red;">❌ Leeg</span>`;
+                            
+                            if (hasContent && contentLength < 100) {
+                                html += '<div class="content-preview" style="margin-top: 10px;">';
+                                html += escapeHtml(chapter.content.substring(0, 200));
+                                if (chapter.content.length > 200) html += '...';
+                                html += '</div>';
+                            } else if (!hasContent) {
+                                html += '<p style="color: #666; font-style: italic; margin-top: 5px;">Dit hoofdstuk heeft geen inhoud.</p>';
+                            }
+                            
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                    }
+                    
+                    html += `<button onclick="fixBook('${book.id}')" class="btn-success" style="margin-top: 10px;">🔧 Fix Dit Boek</button>`;
+                    html += '</div>';
+                });
+                
+            } catch (error) {
+                html += `<div class="book-debug error"><p>❌ Error: ${error.message}</p></div>`;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function fixBook(bookId) {
+            const bookData = localStorage.getItem('bookLibraryData');
+            if (!bookData) return;
+            
+            const books = JSON.parse(bookData);
+            const bookIndex = books.findIndex(b => b.id === bookId);
+            
+            if (bookIndex === -1) return;
+            
+            const book = books[bookIndex];
+            
+            // Add sample content if book has no chapters or empty chapters
+            if (!book.chapters || book.chapters.length === 0) {
+                book.chapters = [{
+                    id: 'sample-' + Date.now(),
+                    title: 'Hoofdstuk 1',
+                    content: `Dit is het eerste hoofdstuk van "${book.title}".\n\nHier komt je verhaal. Je kunt deze tekst bewerken in het admin paneel.\n\nGa naar Admin → klik op het boek → Hoofdstukken → klik op dit hoofdstuk om te bewerken.`,
+                    status: 'complete'
+                }];
+            } else {
+                // Fix empty chapters
+                book.chapters.forEach((chapter, index) => {
+                    if (!chapter.content || chapter.content.trim().length === 0) {
+                        chapter.content = `Dit is hoofdstuk ${index + 1} van "${book.title}".\n\nHier komt de inhoud van dit hoofdstuk. Bewerk deze tekst in het admin paneel.\n\nGa naar Admin → klik op het boek → Hoofdstukken → selecteer dit hoofdstuk om te bewerken.`;
+                    }
+                });
+            }
+            
+            // Save back to localStorage
+            localStorage.setItem('bookLibraryData', JSON.stringify(books));
+            
+            alert(`✅ Boek "${book.title}" is gerepareerd! Herlaad de pagina om de wijzigingen te zien.`);
+            analyzeBooks(); // Refresh analysis
+        }
+        
+        function showSampleFix() {
+            alert(`
+🔧 Hoe Lege Boeken Repareren:
+
+1. 📊 ANALYSEREN
+   • Klik "Analyseer Alle Boeken" om problemen te zien
+   • Rode boeken = geen inhoud
+   • Gele boeken = geen hoofdstukken
+
+2. 🔧 REPAREREN
+   • Klik "Fix Dit Boek" bij probleem boeken
+   • Of ga naar Admin panel → bewerk boek handmatig
+
+3. 📝 INHOUD TOEVOEGEN  
+   • Admin → klik boek → "Hoofdstukken"
+   • Klik "Nieuw Hoofdstuk" of bewerk bestaande
+   • Voeg tekst toe in de editor
+
+4. ✅ TESTEN
+   • Ga naar publieke pagina
+   • Klik op het boek → "Lees Boek"
+   • Controleer of inhoud zichtbaar is
+            `);
+        }
+        
+        // Auto-run analysis on load
+        window.addEventListener('DOMContentLoaded', analyzeBooks);
+    </script>
+</body>
+</html>

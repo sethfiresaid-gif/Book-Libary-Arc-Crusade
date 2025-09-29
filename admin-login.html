@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Crusade - Admin Login</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-login-body">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <h1>Arc Crusade</h1>
+                <p class="tagline">Admin Dashboard</p>
+            </div>
+        </div>
+
+        <div class="login-form-container">
+            <h2>Administrator Login</h2>
+            <p class="login-subtitle">Toegang tot content management</p>
+            
+            <form class="login-form" id="adminLoginForm">
+                <div class="form-group">
+                    <label for="adminUsername">Gebruikersnaam</label>
+                    <input type="text" id="adminUsername" name="username" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="adminPassword">Wachtwoord</label>
+                    <div class="password-input">
+                        <input type="password" id="adminPassword" name="password" required autocomplete="current-password">
+                        <button type="button" class="toggle-password" onclick="togglePassword('adminPassword')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="rememberAdmin">
+                        <span class="checkmark"></span>
+                        Ingelogd blijven
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Administrator Login
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <a href="index.html" class="public-link">
+                    <i class="fas fa-eye"></i>
+                    Bekijk Publieke Bibliotheek
+                </a>
+            </div>
+        </div>
+        
+        <!-- Error Messages -->
+        <div class="error-message" id="errorMessage" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="errorText"></span>
+        </div>
+    </div>
+
+    <script>
+        class AdminAuth {
+            constructor() {
+                this.adminCredentials = {
+                    username: 'admin',  // Eenvoudige gebruikersnaam voor testen
+                    password: 'admin123'    // Eenvoudig wachtwoord voor testen
+                };
+                this.bindEventListeners();
+                this.checkExistingSession();
+            }
+
+            bindEventListeners() {
+                document.getElementById('adminLoginForm').addEventListener('submit', (e) => this.handleLogin(e));
+            }
+
+            checkExistingSession() {
+                const adminSession = sessionStorage.getItem('arcCrusadeAdmin');
+                const rememberedAdmin = localStorage.getItem('rememberedAdmin');
+                
+                if (adminSession || rememberedAdmin) {
+                    window.location.href = 'admin.html';
+                }
+            }
+
+            handleLogin(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const credentials = {
+                    username: formData.get('username').trim(),
+                    password: formData.get('password')
+                };
+
+                if (this.validateCredentials(credentials)) {
+                    this.loginAdmin();
+                    
+                    // Remember admin if checked
+                    if (document.getElementById('rememberAdmin').checked) {
+                        localStorage.setItem('rememberedAdmin', 'true');
+                    }
+                    
+                    this.showSuccess('Login succesvol! Doorsturen naar dashboard...');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 1000);
+                } else {
+                    this.showError('Ongeldige gebruikersnaam of wachtwoord');
+                }
+            }
+
+            validateCredentials(credentials) {
+                return credentials.username === this.adminCredentials.username && 
+                       credentials.password === this.adminCredentials.password;
+            }
+
+            loginAdmin() {
+                sessionStorage.setItem('arcCrusadeAdmin', 'authenticated');
+                sessionStorage.setItem('adminLoginTime', new Date().toISOString());
+            }
+
+            showError(message) {
+                const errorEl = document.getElementById('errorMessage');
+                const errorText = document.getElementById('errorText');
+                errorText.textContent = message;
+                errorEl.style.display = 'flex';
+                errorEl.className = 'error-message show error';
+                
+                setTimeout(() => {
+                    errorEl.style.display = 'none';
+                }, 5000);
+            }
+
+            showSuccess(message) {
+                const errorEl = document.getElementById('errorMessage');
+                const errorText = document.getElementById('errorText');
+                errorText.textContent = message;
+                errorEl.style.display = 'flex';
+                errorEl.className = 'error-message show success';
+            }
+        }
+
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const button = input.nextElementSibling;
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // Initialize admin auth
+        document.addEventListener('DOMContentLoaded', () => {
+            new AdminAuth();
+        });
+    </script>
+</body>
+</html>

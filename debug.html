@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - localStorage Check</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .debug-container { background: white; padding: 20px; border-radius: 8px; max-width: 800px; margin: 0 auto; }
+        .result { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #007bff; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>📊 localStorage Debug Check</h1>
+        <p>Deze pagina toont wat er in localStorage staat voor je boeken bibliotheek.</p>
+        
+        <button onclick="checkLocalStorage()">🔍 Check localStorage</button>
+        <button onclick="clearAllData()">🗑️ Wis alle data</button>
+        <button onclick="addSampleData()">➕ Voeg sample data toe</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function checkLocalStorage() {
+            const resultsDiv = document.getElementById('results');
+            let html = '<h2>🔍 localStorage Inhoud:</h2>';
+            
+            try {
+                // Check bookLibraryData
+                const bookData = localStorage.getItem('bookLibraryData');
+                html += '<div class="result">';
+                html += '<h3>📚 bookLibraryData:</h3>';
+                
+                if (bookData) {
+                    const books = JSON.parse(bookData);
+                    html += `<p><strong>Aantal boeken:</strong> ${books.length}</p>`;
+                    
+                    books.forEach((book, index) => {
+                        html += `<p><strong>Boek ${index + 1}:</strong> "${book.title}" - Status: ${book.status}</p>`;
+                    });
+                    
+                    const publishedBooks = books.filter(b => b.status === 'published');
+                    html += `<p style="color: green;"><strong>Gepubliceerde boeken:</strong> ${publishedBooks.length}</p>`;
+                    
+                } else {
+                    html += '<p style="color: red;">❌ Geen bookLibraryData gevonden!</p>';
+                }
+                html += '</div>';
+                
+                // Check alle localStorage keys
+                html += '<div class="result">';
+                html += '<h3>🔑 Alle localStorage keys:</h3>';
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    html += `<p>• ${key}</p>`;
+                }
+                html += '</div>';
+                
+            } catch (error) {
+                html += `<div class="result error"><p>❌ Error: ${error.message}</p></div>`;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function clearAllData() {
+            if (confirm('Weet je zeker dat je alle data wilt wissen?')) {
+                localStorage.clear();
+                alert('✅ Alle localStorage data gewist!');
+                checkLocalStorage();
+            }
+        }
+        
+        function addSampleData() {
+            const sampleBooks = [
+                {
+                    id: 'sample-' + Date.now(),
+                    title: "Het Verloren Koninkrijk",
+                    author: "Arc Crusade",
+                    genre: "adventure", 
+                    status: "published",
+                    description: "Een groep avonturiers zoekt naar een legendarisch koninkrijk dat al eeuwen verloren is.",
+                    pages: 420,
+                    progress: 100,
+                    coverUrl: "",
+                    createdAt: new Date().toISOString(),
+                    chapters: [],
+                    notes: { general: '', characters: [], worldbuilding: '', plot: '' }
+                },
+                {
+                    id: 'sample-' + (Date.now() + 1),
+                    title: "Sterren van Morgen",
+                    author: "Arc Crusade", 
+                    genre: "sci-fi",
+                    status: "draft",
+                    description: "In een verre toekomst moet de mensheid nieuwe planeten koloniseren om te overleven.",
+                    pages: 280,
+                    progress: 25,
+                    coverUrl: "",
+                    createdAt: new Date().toISOString(),
+                    chapters: [],
+                    notes: { general: '', characters: [], worldbuilding: '', plot: '' }
+                }
+            ];
+            
+            localStorage.setItem('bookLibraryData', JSON.stringify(sampleBooks));
+            alert('✅ Sample data toegevoegd!');
+            checkLocalStorage();
+        }
+        
+        // Auto-run check on load
+        window.addEventListener('DOMContentLoaded', checkLocalStorage);
+    </script>
+</body>
+</html>

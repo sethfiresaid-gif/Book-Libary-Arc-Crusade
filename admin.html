@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Crusade - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <i class="fas fa-scroll"></i>
+                    Arc Crusade Admin
+                </h1>
+                <div class="admin-info">
+                    <span class="admin-badge">
+                        <i class="fas fa-user-shield"></i>
+                        Administrator
+                    </span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" id="dashboardBtn">
+                        <i class="fas fa-chart-pie"></i>
+                        Dashboard
+                    </button>
+                    <button class="btn btn-secondary" id="themeToggleBtn">
+                        <i class="fas fa-moon"></i>
+                        <span>Dark Mode</span>
+                    </button>
+                    <button class="btn btn-primary" id="addBookBtn">
+                        <i class="fas fa-plus"></i>
+                        Nieuw Boek
+                    </button>
+                    <button class="btn btn-success" id="uploadDocBtn">
+                        <i class="fas fa-file-upload"></i>
+                        Upload Document
+                    </button>
+                    <button class="btn btn-secondary" id="toggleViewBtn">
+                        <i class="fas fa-th-large"></i>
+                        <span>Grid View</span>
+                    </button>
+                    <button class="btn btn-secondary" id="previewPublicBtn">
+                        <i class="fas fa-eye"></i>
+                        Publieke Preview
+                    </button>
+                    <button class="btn btn-danger" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Uitloggen
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Filter Controls -->
+        <div class="filter-section">
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label for="statusFilter">Status:</label>
+                    <select id="statusFilter">
+                        <option value="all">Alle</option>
+                        <option value="draft">Drafts</option>
+                        <option value="published">Gepubliceerd</option>
+                        <option value="in-progress">In Bewerking</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="genreFilter">Genre:</label>
+                    <select id="genreFilter">
+                        <option value="all">Alle Genres</option>
+                        <option value="fantasy">Fantasy</option>
+                        <option value="sci-fi">Sci-Fi</option>
+                        <option value="romance">Romance</option>
+                        <option value="thriller">Thriller</option>
+                        <option value="adventure">Avontuur</option>
+                    </select>
+                </div>
+                <div class="search-group">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Zoek boeken...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="dashboard-section" id="dashboardSection" style="display: none;">
+            <div class="dashboard-header">
+                <h2>
+                    <i class="fas fa-chart-pie"></i>
+                    Schrijf Dashboard
+                </h2>
+                <div class="dashboard-actions">
+                    <button class="btn btn-secondary" id="exportStatsBtn">
+                        <i class="fas fa-download"></i>
+                        Export Statistieken
+                    </button>
+                    <button class="btn btn-secondary" id="resetStatsBtn">
+                        <i class="fas fa-refresh"></i>
+                        Reset Statistieken
+                    </button>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalBooksCount">0</h3>
+                        <p>Totaal Boeken</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="draftsCount">0</h3>
+                        <p>Drafts</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="publishedCount">0</h3>
+                        <p>Gepubliceerd</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-pages"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalPagesCount">0</h3>
+                        <p>Totaal Pagina's</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-charts">
+                <div class="chart-card">
+                    <h3>Voortgang per Genre</h3>
+                    <div class="genre-progress" id="genreProgress">
+                        <!-- Genre progress bars will be added here -->
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Schrijf Doelen</h3>
+                    <div class="goals-section" id="goalsSection">
+                        <div class="goal-item">
+                            <label>Dagelijks doel (pagina's):</label>
+                            <input type="number" id="dailyGoal" min="1" value="2">
+                        </div>
+                        <div class="goal-item">
+                            <label>Wekelijks doel (pagina's):</label>
+                            <input type="number" id="weeklyGoal" min="1" value="14">
+                        </div>
+                        <div class="goal-progress">
+                            <div class="goal-bar">
+                                <div class="goal-fill" id="dailyGoalFill" style="width: 0%"></div>
+                            </div>
+                            <span id="dailyGoalText">0/2 pagina's vandaag</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-activity">
+                <h3>Recente Activiteit</h3>
+                <div class="activity-list" id="activityList">
+                    <!-- Recent activities will be added here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Bookshelf -->
+            <div class="bookshelf-container">
+                <div class="bookshelf" id="bookshelf">
+                    <!-- Books will be dynamically added here -->
+                </div>
+                
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h3>Geen boeken gevonden</h3>
+                    <p>Voeg je eerste boek toe om te beginnen!</p>
+                    <button class="btn btn-primary" onclick="openAddBookModal()">
+                        <i class="fas fa-plus"></i>
+                        Voeg Boek Toe
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Add/Edit Book Modal -->
+        <div class="modal" id="bookModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Nieuw Boek Toevoegen</h2>
+                    <button class="close-btn" id="closeModalBtn">&times;</button>
+                </div>
+                <form id="bookForm" class="book-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookTitle">Titel *</label>
+                            <input type="text" id="bookTitle" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookAuthor">Auteur</label>
+                            <input type="text" id="bookAuthor" name="author" placeholder="Jouw naam">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookGenre">Genre</label>
+                            <select id="bookGenre" name="genre">
+                                <option value="fantasy">Fantasy</option>
+                                <option value="sci-fi">Sci-Fi</option>
+                                <option value="romance">Romance</option>
+                                <option value="thriller">Thriller</option>
+                                <option value="adventure">Avontuur</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookStatus">Status</label>
+                            <select id="bookStatus" name="status">
+                                <option value="draft">Draft</option>
+                                <option value="in-progress">In Bewerking</option>
+                                <option value="published">Gepubliceerd</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookDescription">Beschrijving</label>
+                        <textarea id="bookDescription" name="description" rows="4" placeholder="Korte beschrijving van het verhaal..."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookPages">Aantal Pagina's</label>
+                            <input type="number" id="bookPages" name="pages" min="1" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="bookProgress">Voortgang (%)</label>
+                            <input type="number" id="bookProgress" name="progress" min="0" max="100" placeholder="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookCover">Cover URL (optioneel)</label>
+                        <input type="url" id="bookCover" name="coverUrl" placeholder="https://voorbeeld.com/cover.jpg">
+                        <div class="cover-preview" id="coverPreview" style="display: none;">
+                            <img id="coverImage" src="" alt="Book cover preview">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelBtn">Annuleren</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            <span id="submitBtnText">Opslaan</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Book Detail Modal -->
+        <div class="modal" id="bookDetailModal">
+            <div class="modal-content book-detail-content">
+                <div class="modal-header">
+                    <h2 id="detailBookTitle"></h2>
+                    <button class="close-btn" id="closeDetailBtn">&times;</button>
+                </div>
+                <div class="book-detail-body">
+                    <div class="book-detail-cover">
+                        <img id="detailCoverImage" src="" alt="Book cover">
+                        <div class="book-detail-status">
+                            <span class="status-badge" id="detailStatus"></span>
+                        </div>
+                    </div>
+                    <div class="book-detail-info">
+                        <div class="detail-item">
+                            <strong>Auteur:</strong>
+                            <span id="detailAuthor"></span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Genre:</strong>
+                            <span id="detailGenre"></span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Pagina's:</strong>
+                            <span id="detailPages"></span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Voortgang:</strong>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="detailProgressFill"></div>
+                                </div>
+                                <span id="detailProgress">0%</span>
+                            </div>
+                        </div>
+                        <div class="detail-item description">
+                            <strong>Beschrijving:</strong>
+                            <p id="detailDescription"></p>
+                        </div>
+                        <div class="detail-actions">
+                            <button class="btn btn-primary" id="chaptersBtn">
+                                <i class="fas fa-book-open"></i>
+                                Hoofdstukken
+                            </button>
+                            <button class="btn btn-secondary" id="notesBtn">
+                                <i class="fas fa-sticky-note"></i>
+                                Notities
+                            </button>
+                            <button class="btn btn-secondary" id="editBookBtn">
+                                <i class="fas fa-edit"></i>
+                                Bewerken
+                            </button>
+                            <button class="btn btn-danger" id="deleteBookBtn">
+                                <i class="fas fa-trash"></i>
+                                Verwijderen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal" id="deleteModal">
+            <div class="modal-content delete-modal-content">
+                <div class="modal-header">
+                    <h2>Boek Verwijderen</h2>
+                    <button class="close-btn" id="closeDeleteBtn">&times;</button>
+                </div>
+                <div class="delete-modal-body">
+                    <p>Weet je zeker dat je "<span id="deleteBookTitle"></span>" wilt verwijderen?</p>
+                    <p class="warning-text">Deze actie kan niet ongedaan gemaakt worden.</p>
+                </div>
+                <div class="delete-modal-actions">
+                    <button class="btn btn-secondary" id="cancelDeleteBtn">Annuleren</button>
+                    <button class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash"></i>
+                        Verwijderen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chapter Management Modal -->
+        <div class="modal" id="chapterModal">
+            <div class="modal-content chapter-modal-content">
+                <div class="modal-header">
+                    <h2 id="chapterModalTitle">Hoofdstukken Beheren</h2>
+                    <button class="close-btn" id="closeChapterBtn">&times;</button>
+                </div>
+                <div class="chapter-modal-body">
+                    <div class="chapter-actions">
+                        <button class="btn btn-primary" id="addChapterBtn">
+                            <i class="fas fa-plus"></i>
+                            Nieuw Hoofdstuk
+                        </button>
+                        <button class="btn btn-secondary" id="reorderChaptersBtn">
+                            <i class="fas fa-sort"></i>
+                            Herordenen
+                        </button>
+                    </div>
+                    <div class="chapters-list" id="chaptersList">
+                        <!-- Chapters will be listed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chapter Edit Modal -->
+        <div class="modal" id="chapterEditModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="chapterEditTitle">Hoofdstuk Bewerken</h2>
+                    <button class="close-btn" id="closeChapterEditBtn">&times;</button>
+                </div>
+                <form id="chapterForm" class="chapter-form">
+                    <div class="form-group">
+                        <label for="chapterTitle">Hoofdstuk Titel *</label>
+                        <input type="text" id="chapterTitle" name="title" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="chapterNumber">Hoofdstuk Nummer</label>
+                            <input type="number" id="chapterNumber" name="number" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="chapterWords">Aantal Woorden</label>
+                            <input type="number" id="chapterWords" name="wordCount" min="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="chapterSummary">Samenvatting</label>
+                        <textarea id="chapterSummary" name="summary" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="chapterNotes">Notities</label>
+                        <textarea id="chapterNotes" name="notes" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="chapterStatus">Status</label>
+                        <select id="chapterStatus" name="status">
+                            <option value="planned">Gepland</option>
+                            <option value="draft">Draft</option>
+                            <option value="writing">Aan het schrijven</option>
+                            <option value="review">In review</option>
+                            <option value="complete">Voltooid</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelChapterBtn">Annuleren</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            <span id="chapterSubmitText">Opslaan</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notes & World Building Modal -->
+        <div class="modal" id="notesModal">
+            <div class="modal-content notes-modal-content">
+                <div class="modal-header">
+                    <h2>Notities & Worldbuilding</h2>
+                    <button class="close-btn" id="closeNotesBtn">&times;</button>
+                </div>
+                <div class="notes-tabs">
+                    <button class="tab-btn active" data-tab="general">Algemeen</button>
+                    <button class="tab-btn" data-tab="characters">Karakters</button>
+                    <button class="tab-btn" data-tab="worldbuilding">Wereldbouw</button>
+                    <button class="tab-btn" data-tab="plot">Plot</button>
+                </div>
+                <div class="notes-content">
+                    <div class="tab-content active" id="generalTab">
+                        <textarea id="generalNotes" placeholder="Algemene notities over dit boek..."></textarea>
+                    </div>
+                    <div class="tab-content" id="charactersTab">
+                        <div class="characters-section">
+                            <button class="btn btn-primary" id="addCharacterBtn">
+                                <i class="fas fa-user-plus"></i>
+                                Nieuw Karakter
+                            </button>
+                            <div class="characters-list" id="charactersList">
+                                <!-- Characters will be listed here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="worldbuildingTab">
+                        <textarea id="worldbuildingNotes" placeholder="Wereldbouw notities: locaties, culturen, magie systemen..."></textarea>
+                    </div>
+                    <div class="tab-content" id="plotTab">
+                        <textarea id="plotNotes" placeholder="Plot outlines, story arcs, plot twists..."></textarea>
+                    </div>
+                </div>
+                <div class="notes-actions">
+                    <button class="btn btn-secondary" id="saveNotesBtn">
+                        <i class="fas fa-save"></i>
+                        Notities Opslaan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chapter Writer/Reader Modal -->
+        <div class="modal" id="chapterWriterModal">
+            <div class="modal-content chapter-writer-content">
+                <div class="modal-header">
+                    <h2 id="writerChapterTitle">Hoofdstuk Schrijven</h2>
+                    <button class="close-btn" id="closeWriterBtn">&times;</button>
+                </div>
+                <div class="chapter-writer-body">
+                    <div class="writer-toolbar">
+                        <div class="writer-info">
+                            <span id="writerBookTitle">Boek Titel</span> - 
+                            <span id="writerChapterInfo">Hoofdstuk 1</span>
+                        </div>
+                        <div class="writer-actions">
+                            <button class="btn btn-secondary" id="chapterStatsBtn">
+                                <i class="fas fa-chart-bar"></i>
+                                Statistieken
+                            </button>
+                            <button class="btn btn-secondary" id="fullscreenBtn">
+                                <i class="fas fa-expand"></i>
+                                Fullscreen
+                            </button>
+                            <button class="btn btn-primary" id="saveChapterContentBtn">
+                                <i class="fas fa-save"></i>
+                                Opslaan
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="writer-stats" id="writerStats" style="display: none;">
+                        <div class="stats-row">
+                            <div class="stat-item">
+                                <span class="stat-label">Woorden:</span>
+                                <span id="wordCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Karakters:</span>
+                                <span id="charCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Paragrafen:</span>
+                                <span id="paragraphCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Leestijd:</span>
+                                <span id="readingTime">0 min</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chapter-editor">
+                        <div class="editor-formatting">
+                            <button type="button" class="format-btn" data-format="bold" title="Vet (Ctrl+B)">
+                                <i class="fas fa-bold"></i>
+                            </button>
+                            <button type="button" class="format-btn" data-format="italic" title="Cursief (Ctrl+I)">
+                                <i class="fas fa-italic"></i>
+                            </button>
+                            <button type="button" class="format-btn" data-format="underline" title="Onderstreept (Ctrl+U)">
+                                <i class="fas fa-underline"></i>
+                            </button>
+                            <div class="format-separator"></div>
+                            <button type="button" class="format-btn" data-format="paragraph" title="Paragraaf">
+                                <i class="fas fa-paragraph"></i>
+                            </button>
+                            <button type="button" class="format-btn" data-format="quote" title="Quote">
+                                <i class="fas fa-quote-left"></i>
+                            </button>
+                            <div class="format-separator"></div>
+                            <button type="button" class="format-btn" data-format="undo" title="Ongedaan maken (Ctrl+Z)">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                            <button type="button" class="format-btn" data-format="redo" title="Opnieuw (Ctrl+Y)">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="editor-container">
+                            <textarea id="chapterContentEditor" placeholder="Begin hier je hoofdstuk te schrijven...
+                            
+Je kunt gewoon beginnen met typen. De editor ondersteunt:
+• Automatische woordtelling
+• Paragraaf formatting
+• Sneltoetsen voor formatting
+• Automatisch opslaan
+
+Veel schrijfplezier!"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="chapter-footer">
+                        <div class="autosave-indicator">
+                            <i class="fas fa-circle" id="autosaveIndicator"></i>
+                            <span id="autosaveText">Automatisch opslaan: aan</span>
+                        </div>
+                        <div class="last-saved">
+                            Laatst opgeslagen: <span id="lastSavedTime">Nog niet opgeslagen</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Admin Authentication Check
+        document.addEventListener('DOMContentLoaded', () => {
+            const adminSession = sessionStorage.getItem('arcCrusadeAdmin');
+            const rememberedAdmin = localStorage.getItem('rememberedAdmin');
+            
+            if (!adminSession && !rememberedAdmin) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            
+            // Initialize admin-specific functionality
+            document.getElementById('logoutBtn')?.addEventListener('click', () => {
+                if (confirm('Weet je zeker dat je wilt uitloggen?')) {
+                    sessionStorage.removeItem('arcCrusadeAdmin');
+                    sessionStorage.removeItem('adminLoginTime');
+                    localStorage.removeItem('rememberedAdmin');
+                    window.location.href = 'admin-login.html';
+                }
+            });
+            
+            document.getElementById('previewPublicBtn')?.addEventListener('click', () => {
+                window.open('index.html', '_blank');
+            });
+        });
+    </script>
+
+    <!-- Document Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>
+                    <i class="fas fa-file-upload"></i>
+                    Document Uploaden
+                </h2>
+                <button class="close-btn" id="closeUploadBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-form">
+                    <div class="form-group">
+                        <label for="documentFile">Selecteer Document</label>
+                        <div class="file-drop-zone" onclick="document.getElementById('documentFile').click()">
+                            <div class="drop-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <p><strong>Sleep een bestand hierheen</strong> of klik om te selecteren</p>
+                            <p>Ondersteunde formaten: .doc, .docx, .txt (max 10MB)</p>
+                        </div>
+                        <input type="file" id="documentFile" accept=".doc,.docx,.txt" style="display: none;" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="uploadTitle">Boek Titel</label>
+                        <input type="text" id="uploadTitle" placeholder="Titel van het boek..." />
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="uploadAuthor">Auteur</label>
+                            <input type="text" id="uploadAuthor" placeholder="Auteur naam..." />
+                        </div>
+                        <div class="form-group">
+                            <label for="uploadGenre">Genre</label>
+                            <select id="uploadGenre">
+                                <option value="fantasy">Fantasy</option>
+                                <option value="sci-fi">Sci-Fi</option>
+                                <option value="romance">Romance</option>
+                                <option value="thriller">Thriller</option>
+                                <option value="adventure">Avontuur</option>
+                                <option value="mystery">Mysterie</option>
+                                <option value="drama">Drama</option>
+                                <option value="other">Anders</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="uploadDescription">Beschrijving</label>
+                        <textarea id="uploadDescription" placeholder="Korte beschrijving van het boek..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="autoChapters" checked>
+                            Automatisch hoofdstukken detecteren (gebaseerd op "Hoofdstuk" tekst)
+                        </label>
+                    </div>
+                    
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Uploading...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelUploadBtn">Annuleren</button>
+                <button class="btn btn-primary" id="processUploadBtn">
+                    <i class="fas fa-upload"></i>
+                    Document Verwerken
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mammoth.js for DOCX processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

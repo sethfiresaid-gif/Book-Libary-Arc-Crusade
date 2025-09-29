@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Crusade - Boeken Bibliotheek</title>
+    <link rel="stylesheet" href="public-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="public-container">
+        <!-- Header -->
+        <header class="public-header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1 class="site-title">Arc Crusade</h1>
+                    <p class="site-tagline">Self-publishing studio & community platform</p>
+                </div>
+                <nav class="main-nav">
+                    <a href="#home" class="nav-link active" data-section="home">
+                        <i class="fas fa-home"></i>
+                        Home
+                    </a>
+                    <a href="#library" class="nav-link" data-section="library">
+                        <i class="fas fa-book"></i>
+                        Bibliotheek
+                    </a>
+                    <a href="#about" class="nav-link" data-section="about">
+                        <i class="fas fa-user"></i>
+                        Over Mij
+                    </a>
+                    <button class="btn btn-secondary" id="themeToggleBtn">
+                        <i class="fas fa-moon"></i>
+                        <span>Dark Mode</span>
+                    </button>
+                    <a href="admin-login.html" class="admin-link">
+                        <i class="fas fa-cog"></i>
+                        Admin
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Home Section -->
+        <section class="content-section active" id="homeSection">
+            <div class="hero-section">
+                <div class="hero-content">
+                    <h2 class="hero-title">Welkom bij Arc Crusade</h2>
+                    <p class="hero-subtitle">Een self-publishing studio met boekverkoop, publicatieservices en een community platform.</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" onclick="switchSection('library')">
+                            <i class="fas fa-book-open"></i>
+                            Ontdek Mijn Boeken
+                        </button>
+                        <button class="btn btn-secondary" onclick="switchSection('about')">
+                            <i class="fas fa-user"></i>
+                            Meer Over Mij
+                        </button>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <div class="book-showcase">
+                        <i class="fas fa-scroll"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-pen-fancy"></i>
+                    </div>
+                    <h3>Verhalen Schrijven</h3>
+                    <p>Ontdek mijn collectie van fantasy, sci-fi en avontuur verhalen</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Community</h3>
+                    <p>Deel je passie voor verhalen met andere lezers en schrijvers</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3>Self-Publishing</h3>
+                    <p>Professionele publicatieservices voor ambitieuze auteurs</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Library Section -->
+        <section class="content-section" id="librarySection">
+            <div class="section-header">
+                <h2>
+                    <i class="fas fa-book"></i>
+                    Mijn Boeken Bibliotheek
+                </h2>
+                <p class="section-subtitle">Ontdek mijn gepubliceerde verhalen en boeken</p>
+            </div>
+            
+            <!-- Filter Controls -->
+            <div class="filter-section">
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="genreFilter">Genre:</label>
+                        <select id="genreFilter">
+                            <option value="all">Alle Genres</option>
+                            <option value="fantasy">Fantasy</option>
+                            <option value="sci-fi">Sci-Fi</option>
+                            <option value="romance">Romance</option>
+                            <option value="thriller">Thriller</option>
+                            <option value="adventure">Avontuur</option>
+                        </select>
+                    </div>
+                    <div class="search-group">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchInput" placeholder="Zoek boeken...">
+                    </div>
+                    <div class="view-controls">
+                        <button class="btn btn-secondary" id="toggleViewBtn">
+                            <i class="fas fa-th-large"></i>
+                            <span>Grid View</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Published Books Display -->
+            <div id="publishedBooks" class="published-books-grid">
+                <!-- Published books will be shown here -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <h3>Nog geen boeken gepubliceerd</h3>
+                <p>Er zijn momenteel geen gepubliceerde boeken beschikbaar.</p>
+            </div>
+
+        </section>
+
+        <!-- About Section -->
+        <section class="content-section" id="aboutSection">
+            <div class="about-container">
+                <div class="about-content">
+                    <div class="about-text">
+                        <h2>
+                            <i class="fas fa-user"></i>
+                            Over Arc Crusade
+                        </h2>
+                        <p class="about-intro">Welkom bij mijn schrijfwereld! Ik ben een gepassioneerde auteur die zich specialiseert in fantasy, sci-fi en avontuur verhalen.</p>
+                        
+                        <div class="about-details">
+                            <h3>Mijn Missie</h3>
+                            <p>Ik geloof in de kracht van verhalen om ons te inspireren, te ontsnappen aan de realiteit en om nieuwe werelden te ontdekken. Door mijn self-publishing studio help ik niet alleen mijn eigen verhalen tot leven te brengen, maar ondersteun ik ook andere auteurs in hun publicatietraject.</p>
+                            
+                            <h3>Wat Ik Doe</h3>
+                            <ul class="about-list">
+                                <li><i class="fas fa-pen"></i> Schrijven van originele fantasy en sci-fi verhalen</li>
+                                <li><i class="fas fa-book"></i> Self-publishing services voor andere auteurs</li>
+                                <li><i class="fas fa-users"></i> Community building voor lezers en schrijvers</li>
+                                <li><i class="fas fa-lightbulb"></i> Creatieve workshops en schrijfadvies</li>
+                            </ul>
+                            
+                            <h3>Contact & Social</h3>
+                            <div class="social-links">
+                                <a href="#" class="social-link">
+                                    <i class="fab fa-twitter"></i>
+                                    Twitter
+                                </a>
+                                <a href="#" class="social-link">
+                                    <i class="fab fa-instagram"></i>
+                                    Instagram
+                                </a>
+                                <a href="#" class="social-link">
+                                    <i class="fas fa-envelope"></i>
+                                    Email
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="about-image">
+                        <div class="author-placeholder">
+                            <i class="fas fa-user-circle"></i>
+                            <p>Voeg hier je foto toe</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+                    <p>Binnenkort verschijnen hier mijn verhalen en boeken!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="section-content" style="display: none;">
+            <div class="container">
+                <h2>Over de Auteur</h2>
+                <div class="about-content">
+                    <p>Welkom bij mijn digitale bibliotheek! Hier vind je mijn gepubliceerde verhalen en boeken.</p>
+                    <p>Als een gepassioneerde schrijver van fantasy en avontuurverhalen, deel ik graag mijn creaties met de wereld.</p>
+                    
+                    <div class="author-stats">
+                        <div class="stat-item">
+                            <h3 id="publicBooksCount">0</h3>
+                            <p>Gepubliceerde Boeken</p>
+                        </div>
+                        <div class="stat-item">
+                            <h3 id="publicPagesCount">0</h3>
+                            <p>Totaal Pagina's</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Book Detail Modal for Public -->
+        <div class="modal" id="publicBookModal">
+            <div class="modal-content book-detail-content">
+                <div class="modal-header">
+                    <h2 id="publicBookTitle"></h2>
+                    <button class="close-btn" id="closePublicBookBtn">&times;</button>
+                </div>
+                <div class="book-detail-body">
+                    <div class="book-detail-cover">
+                        <img id="publicBookCover" src="" alt="Book cover">
+                        <div class="book-detail-status">
+                            <span class="status-badge published">Gepubliceerd</span>
+                        </div>
+                    </div>
+                    <div class="book-detail-info">
+                        <div class="detail-item">
+                            <strong>Auteur:</strong>
+                            <span id="publicBookAuthor"></span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Genre:</strong>
+                            <span id="publicBookGenre"></span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Pagina's:</strong>
+                            <span id="publicBookPages"></span>
+                        </div>
+                        <div class="detail-item description">
+                            <strong>Beschrijving:</strong>
+                            <p id="publicBookDescription"></p>
+                        </div>
+                        <div class="detail-actions">
+                            <button class="btn btn-primary" id="readBookBtn">
+                                <i class="fas fa-book-open"></i>
+                                Lees Boek
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chapter Reader Modal -->
+        <div class="modal" id="chapterReaderModal">
+            <div class="modal-content chapter-reader-content">
+                <div class="modal-header">
+                    <h2 id="readerBookTitle"></h2>
+                    <button class="close-btn" id="closeReaderBtn">&times;</button>
+                </div>
+                <div class="reader-body">
+                    <div class="chapters-nav">
+                        <div class="nav-controls">
+                            <button class="btn btn-secondary" id="prevChapterBtn" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                                Vorige
+                            </button>
+                            <select id="chapterSelector" class="chapter-select">
+                                <!-- Chapters will be populated here -->
+                            </select>
+                            <button class="btn btn-secondary" id="nextChapterBtn">
+                                Volgende
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chapter-content">
+                        <h3 id="currentChapterTitle"></h3>
+                        <div id="currentChapterContent" class="chapter-text"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="public-styles.css">
+    <script src="public-script.js"></script>
+</body>
+</html>
