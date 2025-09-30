@@ -895,6 +895,12 @@ class BookLibrary {
             
             console.log('✅ Data saved successfully!');
             
+            // Debug: Show all book statuses after save
+            console.log('📊 Current book statuses:');
+            this.books.forEach((book, index) => {
+                console.log(`  ${index + 1}. "${book.title}" - Status: "${book.status}"`);
+            });
+            
         } catch (error) {
             console.error('❌ Failed to save data to localStorage:', error);
             // Automatic fallback to compact mode

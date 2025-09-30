@@ -75,6 +75,10 @@ class PublicBookLibrary {
                 
                 if (this.books.length === 0) {
                     console.warn('⚠️ No published books found! Make sure to set book status to "published" in admin panel.');
+                    // Debug: Show all book statuses
+                    allBooks.forEach((book, index) => {
+                        console.log(`Book ${index + 1}: "${book.title}" - Status: "${book.status}"`);
+                    });
                 } else {
                     console.log('✅ Published books loaded successfully!');
                 }
@@ -146,6 +150,25 @@ class PublicBookLibrary {
             console.error('Error loading books:', error);
             this.books = [];
         }
+        
+        // Debug function accessible from console
+        window.debugBooks = () => {
+            const data = localStorage.getItem('bookLibraryData');
+            if (data) {
+                const books = JSON.parse(data);
+                console.log('=== BOOK DEBUG INFO ===');
+                console.log('Total books in localStorage:', books.length);
+                books.forEach((book, i) => {
+                    console.log(`${i+1}. "${book.title}" - Status: "${book.status}" - Author: "${book.author}"`);
+                });
+                const published = books.filter(b => b.status === 'published');
+                console.log(`Published books: ${published.length}`);
+                return books;
+            } else {
+                console.log('No books found in localStorage');
+                return [];
+            }
+        };
     }
 
     // Setup navigation between sections
