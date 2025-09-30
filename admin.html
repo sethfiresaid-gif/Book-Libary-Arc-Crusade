@@ -796,61 +796,79 @@ Veel schrijfplezier!"></textarea>
         // Cover Upload Functionality
         let currentCoverFile = null;
         
-        document.getElementById('coverFileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    alert('Alleen afbeeldingen zijn toegestaan (JPG, PNG, GIF)');
-                    return;
+        const coverFileInput = document.getElementById('coverFileInput');
+        if (coverFileInput) {
+            coverFileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        alert('Alleen afbeeldingen zijn toegestaan (JPG, PNG, GIF)');
+                        return;
+                    }
+                    
+                    // Validate file size (5MB max)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Afbeelding is te groot. Maximum grootte is 5MB.');
+                        return;
+                    }
+                    
+                    currentCoverFile = file;
+                    
+                    // Create preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        showCoverPreview(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    // Hide URL option
+                    const urlOption = document.querySelector('.url-option');
+                    if (urlOption) urlOption.style.display = 'none';
                 }
-                
-                // Validate file size (5MB max)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Afbeelding is te groot. Maximum grootte is 5MB.');
-                    return;
-                }
-                
-                currentCoverFile = file;
-                
-                // Create preview
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    showCoverPreview(e.target.result);
-                };
-                reader.readAsDataURL(file);
-                
-                // Hide URL option
-                document.querySelector('.url-option').style.display = 'none';
-            }
-        });
+            });
+        }
         
-        document.getElementById('coverUrlInput').addEventListener('input', function(e) {
-            if (e.target.value.trim()) {
-                showCoverPreview(e.target.value);
-                currentCoverFile = null; // Clear file if URL is used
-            } else {
-                hideCoverPreview();
-            }
-        });
+        const coverUrlInput = document.getElementById('coverUrlInput');
+        if (coverUrlInput) {
+            coverUrlInput.addEventListener('input', function(e) {
+                if (e.target.value.trim()) {
+                    showCoverPreview(e.target.value);
+                    currentCoverFile = null; // Clear file if URL is used
+                } else {
+                    hideCoverPreview();
+                }
+            });
+        }
         
         window.showCoverPreview = function(src) {
             const preview = document.getElementById('coverPreview');
-            const img = preview.querySelector('img');
-            img.src = src;
-            preview.style.display = 'block';
+            if (preview) {
+                const img = preview.querySelector('img');
+                if (img) {
+                    img.src = src;
+                    preview.style.display = 'block';
+                }
+            }
         }
         
         window.hideCoverPreview = function() {
-            document.getElementById('coverPreview').style.display = 'none';
+            const preview = document.getElementById('coverPreview');
+            if (preview) {
+                preview.style.display = 'none';
+            }
         }
         
         window.removeCover = function() {
             currentCoverFile = null;
-            document.getElementById('coverFileInput').value = '';
-            document.getElementById('coverUrlInput').value = '';
+            const coverFileInput = document.getElementById('coverFileInput');
+            const coverUrlInput = document.getElementById('coverUrlInput');
+            const urlOption = document.querySelector('.url-option');
+            
+            if (coverFileInput) coverFileInput.value = '';
+            if (coverUrlInput) coverUrlInput.value = '';
             hideCoverPreview();
-            document.querySelector('.url-option').style.display = 'block';
+            if (urlOption) urlOption.style.display = 'block';
         }
         
         function convertToBase64(file) {
@@ -871,16 +889,22 @@ Veel schrijfplezier!"></textarea>
                     console.error('Error converting cover to base64:', error);
                     return '';
                 }
-            } else if (document.getElementById('coverUrlInput').value.trim()) {
-                return document.getElementById('coverUrlInput').value.trim();
+            } else {
+                const coverUrlInput = document.getElementById('coverUrlInput');
+                if (coverUrlInput && coverUrlInput.value.trim()) {
+                    return coverUrlInput.value.trim();
+                }
             }
             return '';
         }
         
         // Reset cover when modal closes
-        document.getElementById('bookModal').addEventListener('hidden.bs.modal', function() {
-            removeCover();
-        });
+        const bookModal = document.getElementById('bookModal');
+        if (bookModal) {
+            bookModal.addEventListener('hidden.bs.modal', function() {
+                removeCover();
+            });
+        }
     </script>
 </body>
 </html>
