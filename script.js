@@ -261,7 +261,10 @@ class BookLibrary {
 
     resetForm() {
         document.getElementById('bookForm').reset();
-        removeCover(); // Use our new cover reset function
+        // Only call removeCover if it exists (cover upload is implemented)
+        if (typeof removeCover === 'function') {
+            removeCover();
+        }
     }
 
     async handleFormSubmit(e) {

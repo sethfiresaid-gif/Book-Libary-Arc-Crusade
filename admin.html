@@ -825,15 +825,19 @@ Veel schrijfplezier!"></textarea>
         }
         
         window.removeCover = function() {
-            currentCoverFile = null;
+            // Only reset if elements exist (cover upload is implemented)
             const coverFileInput = document.getElementById('coverFileInput');
             const coverUrlInput = document.getElementById('coverUrlInput');
-            const urlOption = document.querySelector('.url-option');
             
-            if (coverFileInput) coverFileInput.value = '';
-            if (coverUrlInput) coverUrlInput.value = '';
-            hideCoverPreview();
-            if (urlOption) urlOption.style.display = 'block';
+            if (coverFileInput || coverUrlInput) {
+                currentCoverFile = null;
+                if (coverFileInput) coverFileInput.value = '';
+                if (coverUrlInput) coverUrlInput.value = '';
+                hideCoverPreview();
+                
+                const urlOption = document.querySelector('.url-option');
+                if (urlOption) urlOption.style.display = 'block';
+            }
         }
         
         window.getCoverData = async function() {
