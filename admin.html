@@ -834,18 +834,18 @@ Veel schrijfplezier!"></textarea>
             }
         });
         
-        function showCoverPreview(src) {
+        window.showCoverPreview = function(src) {
             const preview = document.getElementById('coverPreview');
             const img = preview.querySelector('img');
             img.src = src;
             preview.style.display = 'block';
         }
         
-        function hideCoverPreview() {
+        window.hideCoverPreview = function() {
             document.getElementById('coverPreview').style.display = 'none';
         }
         
-        function removeCover() {
+        window.removeCover = function() {
             currentCoverFile = null;
             document.getElementById('coverFileInput').value = '';
             document.getElementById('coverUrlInput').value = '';
@@ -863,7 +863,7 @@ Veel schrijfplezier!"></textarea>
         }
         
         // Modified book creation to handle cover uploads
-        async function getCoverData() {
+        window.getCoverData = async function() {
             if (currentCoverFile) {
                 try {
                     return await convertToBase64(currentCoverFile);
