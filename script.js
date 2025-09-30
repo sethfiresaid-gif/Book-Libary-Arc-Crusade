@@ -23,11 +23,8 @@ class BookLibrary {
         };
         this.activities = [];
         
-        // Initialize storage manager for better storage handling
-        this.storageManager = window.OneDriveStorageManager ? new OneDriveStorageManager() : null;
-        
         this.initializeApp();
-        this.loadDataFromStorageAsync();
+        this.loadDataFromStorage();
         this.loadSampleData(); // Moved here - only loads if no data exists
         this.renderBooks();
         this.updateDashboard();
@@ -866,48 +863,59 @@ class BookLibrary {
         document.body.style.overflow = '';
     }
 
-    async saveDataToStorage() {
+    saveDataToStorage() {
         try {
-            console.log('💾 Saving data...', {
+            console.log('💾 Saving data to localStorage...', {
                 booksCount: this.books.length,
                 timestamp: new Date().toISOString()
             });
             
-            if (this.storageManager) {
-                // Use advanced storage manager
-                const success = await this.storageManager.saveBooks(this.books);
-                if (success) {
-                    // Save settings separately
-                    await this.storageManager.saveSettings({
-                        theme: this.theme,
-                        currentView: this.currentView,
-                        viewMode: this.viewMode,
-                        stats: this.stats,
-                        activities: this.activities
-                    });
-                    console.log('✅ Data saved with advanced storage!');
-                    return;
-                }
+            // Check storage size and clean if needed
+            const dataSize = JSON.stringify(this.books).length;
+            console.log(`📊 Data size: ${(dataSize / 1024).toFixed(2)} KB`);
+            
+            if (dataSize > 2 * 1024 * 1024) { // 2MB threshold
+                console.warn('⚠️ Data large, using compact mode...');
+                return this.saveDataToLocalStorageCompact();
             }
             
-            // Fallback to compact localStorage
-            this.saveDataToLocalStorageCompact();
+            // Try normal save first
+            localStorage.setItem('bookLibraryData', JSON.stringify(this.books));
+            localStorage.setItem('bookLibraryTheme', this.theme);
+            localStorage.setItem('bookLibraryCurrentView', this.currentView);
+            localStorage.setItem('viewMode', this.viewMode);
+            
+            // Try to save additional data
+            try {
+                localStorage.setItem('bookLibraryStats', JSON.stringify(this.stats));
+                localStorage.setItem('bookLibraryActivities', JSON.stringify(this.activities));
+            } catch (additionalError) {
+                console.warn('⚠️ Could not save stats/activities due to storage limits');
+            }
+            
+            console.log('✅ Data saved successfully!');
             
         } catch (error) {
-            console.error('❌ Failed to save data:', error);
+            console.error('❌ Failed to save data to localStorage:', error);
+            // Automatic fallback to compact mode
             this.saveDataToLocalStorageCompact();
         }
     }
     
     saveDataToLocalStorageCompact() {
         try {
-            // Create compact version without large images
+            console.log('🗜️ Saving in compact mode...');
+            
+            // Create very compact version
             const compactBooks = this.books.map(book => ({
                 ...book,
-                coverUrl: book.coverUrl && book.coverUrl.startsWith('data:') && book.coverUrl.length > 10000 ? '' : book.coverUrl,
+                // Remove large base64 images
+                coverUrl: book.coverUrl && book.coverUrl.startsWith('data:') && book.coverUrl.length > 5000 ? '' : book.coverUrl,
+                // Truncate chapter content if too large
                 chapters: book.chapters ? book.chapters.map(chapter => ({
                     ...chapter,
-                    content: chapter.content && chapter.content.length > 30000 ? chapter.content.substring(0, 30000) + '...[truncated]' : chapter.content
+                    content: chapter.content && chapter.content.length > 20000 ? 
+                        chapter.content.substring(0, 20000) + '...[truncated for storage]' : chapter.content
                 })) : []
             }));
             
@@ -916,72 +924,38 @@ class BookLibrary {
             localStorage.setItem('bookLibraryCurrentView', this.currentView);
             localStorage.setItem('viewMode', this.viewMode);
             
-            console.log('💾 Data saved to localStorage (compact mode)');
+            console.log('💾 Data saved in compact mode (large images removed)');
+            
+            // Show user notification if images were removed
+            const removedImages = this.books.filter(book => 
+                book.coverUrl && book.coverUrl.startsWith('data:') && book.coverUrl.length > 5000
+            ).length;
+            
+            if (removedImages > 0) {
+                console.warn(`⚠️ Removed ${removedImages} large images to save space`);
+            }
+            
         } catch (error) {
             console.error('❌ Even compact save failed:', error);
-            alert('Opslag vol! Verwijder enkele boeken of gebruik kleinere afbeeldingen.');
+            // Ultimate fallback - save only essential data
+            try {
+                const minimalBooks = this.books.map(book => ({
+                    id: book.id,
+                    title: book.title,
+                    author: book.author,
+                    status: book.status,
+                    genre: book.genre,
+                    createdAt: book.createdAt
+                }));
+                localStorage.setItem('bookLibraryData', JSON.stringify(minimalBooks));
+                alert('⚠️ Opslag bijna vol! Alleen basis boekinfo is opgeslagen. Verwijder enkele boeken.');
+            } catch (ultimateError) {
+                alert('❌ Opslag volledig vol! Kan geen data opslaan. Verwijder boeken of gebruik kleinere afbeeldingen.');
+            }
         }
     }
 
-    cleanupLargeImages() {
-        console.log('🧹 Cleaning up large base64 images...');
-        let cleaned = 0;
-        
-        this.books.forEach(book => {
-            if (book.coverUrl && book.coverUrl.startsWith('data:') && book.coverUrl.length > 50000) {
-                console.log(`🗑️ Removing large image from book: ${book.title}`);
-                book.coverUrl = '';
-                cleaned++;
-            }
-        });
-        
-        if (cleaned > 0) {
-            console.log(`✅ Cleaned ${cleaned} large images to free storage space`);
-        }
-        
-        // Also clean up old backup data
-        try {
-            localStorage.removeItem('bookLibraryDataBackup');
-            localStorage.removeItem('bookLibraryStats');
-            localStorage.removeItem('bookLibraryActivities');
-            console.log('🧹 Cleaned up backup and stats data');
-        } catch (error) {
-            console.log('Error cleaning backup data:', error);
-        }
-    }
 
-    async loadDataFromStorageAsync() {
-        try {
-            console.log('📚 Loading data...');
-            
-            if (this.storageManager) {
-                // Try to load from advanced storage
-                const books = await this.storageManager.loadBooks();
-                const settings = await this.storageManager.loadSettings();
-                
-                if (books && books.length > 0) {
-                    this.books = books;
-                    console.log('✅ Loaded books from advanced storage:', books.length);
-                }
-                
-                if (settings) {
-                    this.theme = settings.theme || this.theme;
-                    this.currentView = settings.currentView || this.currentView;
-                    this.viewMode = settings.viewMode || this.viewMode;
-                    this.stats = { ...this.stats, ...(settings.stats || {}) };
-                    this.activities = settings.activities || this.activities;
-                }
-                
-                this.applyLoadedSettings();
-                return;
-            }
-        } catch (error) {
-            console.warn('⚠️ Advanced storage failed, falling back to localStorage:', error);
-        }
-        
-        // Fallback to localStorage
-        this.loadDataFromStorage();
-    }
 
     loadDataFromStorage() {
         try {
