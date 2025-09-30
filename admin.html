@@ -796,6 +796,66 @@ Veel schrijfplezier!"></textarea>
         // Cover Upload Functionality
         let currentCoverFile = null;
         
+        // Global functions (accessible from other scripts)
+        function convertToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        window.showCoverPreview = function(src) {
+            const preview = document.getElementById('coverPreview');
+            if (preview) {
+                const img = preview.querySelector('img');
+                if (img) {
+                    img.src = src;
+                    preview.style.display = 'block';
+                }
+            }
+        }
+        
+        window.hideCoverPreview = function() {
+            const preview = document.getElementById('coverPreview');
+            if (preview) {
+                preview.style.display = 'none';
+            }
+        }
+        
+        window.removeCover = function() {
+            currentCoverFile = null;
+            const coverFileInput = document.getElementById('coverFileInput');
+            const coverUrlInput = document.getElementById('coverUrlInput');
+            const urlOption = document.querySelector('.url-option');
+            
+            if (coverFileInput) coverFileInput.value = '';
+            if (coverUrlInput) coverUrlInput.value = '';
+            hideCoverPreview();
+            if (urlOption) urlOption.style.display = 'block';
+        }
+        
+        window.getCoverData = async function() {
+            if (currentCoverFile) {
+                try {
+                    return await convertToBase64(currentCoverFile);
+                } catch (error) {
+                    console.error('Error converting cover to base64:', error);
+                    return '';
+                }
+            } else {
+                const coverUrlInput = document.getElementById('coverUrlInput');
+                if (coverUrlInput && coverUrlInput.value.trim()) {
+                    return coverUrlInput.value.trim();
+                }
+            }
+            return '';
+        }
+        
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+        
         const coverFileInput = document.getElementById('coverFileInput');
         if (coverFileInput) {
             coverFileInput.addEventListener('change', function(e) {
@@ -841,62 +901,7 @@ Veel schrijfplezier!"></textarea>
             });
         }
         
-        window.showCoverPreview = function(src) {
-            const preview = document.getElementById('coverPreview');
-            if (preview) {
-                const img = preview.querySelector('img');
-                if (img) {
-                    img.src = src;
-                    preview.style.display = 'block';
-                }
-            }
-        }
-        
-        window.hideCoverPreview = function() {
-            const preview = document.getElementById('coverPreview');
-            if (preview) {
-                preview.style.display = 'none';
-            }
-        }
-        
-        window.removeCover = function() {
-            currentCoverFile = null;
-            const coverFileInput = document.getElementById('coverFileInput');
-            const coverUrlInput = document.getElementById('coverUrlInput');
-            const urlOption = document.querySelector('.url-option');
-            
-            if (coverFileInput) coverFileInput.value = '';
-            if (coverUrlInput) coverUrlInput.value = '';
-            hideCoverPreview();
-            if (urlOption) urlOption.style.display = 'block';
-        }
-        
-        function convertToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(file);
-            });
-        }
-        
-        // Modified book creation to handle cover uploads
-        window.getCoverData = async function() {
-            if (currentCoverFile) {
-                try {
-                    return await convertToBase64(currentCoverFile);
-                } catch (error) {
-                    console.error('Error converting cover to base64:', error);
-                    return '';
-                }
-            } else {
-                const coverUrlInput = document.getElementById('coverUrlInput');
-                if (coverUrlInput && coverUrlInput.value.trim()) {
-                    return coverUrlInput.value.trim();
-                }
-            }
-            return '';
-        }
+
         
         // Reset cover when modal closes
         const bookModal = document.getElementById('bookModal');
@@ -905,6 +910,8 @@ Veel schrijfplezier!"></textarea>
                 removeCover();
             });
         }
+        
+        }); // End DOMContentLoaded
     </script>
 </body>
 </html>
