@@ -245,16 +245,21 @@ class BookLibrary {
         document.getElementById('bookPages').value = book.pages || '';
         document.getElementById('bookProgress').value = book.progress || 0;
         
-        // Handle cover URL for editing
-        if (book.coverUrl) {
+        // Handle cover URL for editing (only if cover upload elements exist)
+        const coverUrlInput = document.getElementById('coverUrlInput');
+        if (book.coverUrl && coverUrlInput) {
             if (book.coverUrl.startsWith('data:')) {
                 // It's a base64 image, show preview but can't put in URL field
-                showCoverPreview(book.coverUrl);
-                document.getElementById('coverUrlInput').value = '';
+                if (typeof showCoverPreview === 'function') {
+                    showCoverPreview(book.coverUrl);
+                }
+                coverUrlInput.value = '';
             } else {
                 // It's a URL, put in URL field
-                document.getElementById('coverUrlInput').value = book.coverUrl;
-                showCoverPreview(book.coverUrl);
+                coverUrlInput.value = book.coverUrl;
+                if (typeof showCoverPreview === 'function') {
+                    showCoverPreview(book.coverUrl);
+                }
             }
         }
     }
@@ -870,16 +875,10 @@ class BookLibrary {
             console.log(`📊 Data size: ${(dataSize / 1024).toFixed(2)} KB`);
             
             // If data is too large, show warning and try to clean up
-            if (dataSize > 4 * 1024 * 1024) { // 4MB threshold
-                console.warn('⚠️ Data approaching localStorage limit. Consider using smaller images or URLs.');
+            if (dataSize > 2 * 1024 * 1024) { // 2MB threshold (more aggressive)
+                console.warn('⚠️ Data approaching localStorage limit. Cleaning up large images...');
                 this.cleanupLargeImages();
             }
-            
-            const dataToSave = {
-                books: this.books,
-                lastSaved: new Date().toISOString(),
-                source: 'admin'
-            };
             
             // Save essential data first
             localStorage.setItem('bookLibraryData', JSON.stringify(this.books));
@@ -887,15 +886,33 @@ class BookLibrary {
             localStorage.setItem('bookLibraryCurrentView', this.currentView);
             localStorage.setItem('viewMode', this.viewMode);
             
-            // Try to save backup and additional data
+            // Try to save backup and additional data (without large images)
             try {
-                localStorage.setItem('bookLibraryDataBackup', JSON.stringify(dataToSave));
+                const compactBooks = this.books.map(book => ({
+                    id: book.id,
+                    title: book.title,
+                    author: book.author,
+                    status: book.status,
+                    createdAt: book.createdAt,
+                    // Skip coverUrl if it's a large base64 image
+                    coverUrl: (book.coverUrl && book.coverUrl.startsWith('data:') && book.coverUrl.length > 50000) ? '[large-image]' : book.coverUrl
+                }));
+                
+                const compactDataToSave = {
+                    books: compactBooks,
+                    lastSaved: new Date().toISOString(),
+                    source: 'admin'
+                };
+                
+                localStorage.setItem('bookLibraryDataBackup', JSON.stringify(compactDataToSave));
                 localStorage.setItem('bookLibraryStats', JSON.stringify(this.stats));
                 localStorage.setItem('bookLibraryActivities', JSON.stringify(this.activities));
             } catch (backupError) {
                 console.warn('⚠️ Could not save backup data due to storage limits');
                 // Remove backup to free space
                 localStorage.removeItem('bookLibraryDataBackup');
+                localStorage.removeItem('bookLibraryStats');
+                localStorage.removeItem('bookLibraryActivities');
             }
             
             console.log('✅ Data saved successfully!');
@@ -923,7 +940,7 @@ class BookLibrary {
         let cleaned = 0;
         
         this.books.forEach(book => {
-            if (book.coverUrl && book.coverUrl.startsWith('data:') && book.coverUrl.length > 100000) {
+            if (book.coverUrl && book.coverUrl.startsWith('data:') && book.coverUrl.length > 50000) {
                 console.log(`🗑️ Removing large image from book: ${book.title}`);
                 book.coverUrl = '';
                 cleaned++;
@@ -932,6 +949,16 @@ class BookLibrary {
         
         if (cleaned > 0) {
             console.log(`✅ Cleaned ${cleaned} large images to free storage space`);
+        }
+        
+        // Also clean up old backup data
+        try {
+            localStorage.removeItem('bookLibraryDataBackup');
+            localStorage.removeItem('bookLibraryStats');
+            localStorage.removeItem('bookLibraryActivities');
+            console.log('🧹 Cleaned up backup and stats data');
+        } catch (error) {
+            console.log('Error cleaning backup data:', error);
         }
     }
 
