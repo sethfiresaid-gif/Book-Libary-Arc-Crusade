@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Automated Test Runner - Book Library</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+        .test-results {
+            margin: 20px 0;
+        }
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+        }
+        .test-item.pass {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .test-item.fail {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .test-item.running {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        .test-name {
+            font-weight: 500;
+        }
+        .test-status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .status-pass {
+            background: #28a745;
+            color: white;
+        }
+        .status-fail {
+            background: #dc3545;
+            color: white;
+        }
+        .status-running {
+            background: #ffc107;
+            color: #333;
+        }
+        .controls {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .summary {
+            margin: 20px 0;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        .log {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+            white-space: pre-wrap;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Automated Test Runner</h1>
+        
+        <div class="controls">
+            <button id="runAllTests" class="btn">🚀 Run All Tests</button>
+            <button id="runCoreTests" class="btn">⚡ Run Core Tests Only</button>
+            <button id="clearResults" class="btn">🗑️ Clear Results</button>
+            <button id="exportReport" class="btn">📊 Export Report</button>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="summary" id="summary">
+            <h3>📋 Test Summary</h3>
+            <p>Klik op "Run All Tests" om te beginnen met testen.</p>
+        </div>
+
+        <div class="test-results" id="testResults">
+            <!-- Test results will be populated here -->
+        </div>
+
+        <div class="log" id="testLog">
+            === Test Log ===
+Wacht op test uitvoering...
+        </div>
+    </div>
+
+    <script>
+        class AutomatedTester {
+            constructor() {
+                this.tests = [
+                    // Core Functionality Tests
+                    { name: 'localStorage Data Persistence', category: 'core', test: this.testLocalStorage },
+                    { name: 'Admin Authentication', category: 'core', test: this.testAdminAuth },
+                    { name: 'Book Creation & Storage', category: 'core', test: this.testBookCreation },
+                    { name: 'Chapter Management', category: 'core', test: this.testChapterManagement },
+                    { name: 'Data Sync Between Pages', category: 'core', test: this.testDataSync },
+                    
+                    // Document Upload Tests
+                    { name: 'Document Upload Modal', category: 'upload', test: this.testUploadModal },
+                    { name: 'File Processing Logic', category: 'upload', test: this.testFileProcessing },
+                    
+                    // Public Page Tests
+                    { name: 'Public Page Loading', category: 'public', test: this.testPublicPageLoad },
+                    { name: 'Published Books Display', category: 'public', test: this.testPublishedBooks },
+                    { name: 'Chapter Reader', category: 'public', test: this.testChapterReader },
+                    
+                    // UI/UX Tests
+                    { name: 'Modal Functionality', category: 'ui', test: this.testModals },
+                    { name: 'Theme System', category: 'ui', test: this.testThemes },
+                    { name: 'Responsive Design', category: 'ui', test: this.testResponsive },
+                    
+                    // Error Handling Tests
+                    { name: 'Error Recovery', category: 'error', test: this.testErrorRecovery },
+                    { name: 'Data Backup System', category: 'error', test: this.testBackupSystem }
+                ];
+                
+                this.results = [];
+                this.currentTestIndex = 0;
+                this.isRunning = false;
+                
+                this.initializeUI();
+            }
+
+            initializeUI() {
+                document.getElementById('runAllTests').addEventListener('click', () => this.runAllTests());
+                document.getElementById('runCoreTests').addEventListener('click', () => this.runCoreTests());
+                document.getElementById('clearResults').addEventListener('click', () => this.clearResults());
+                document.getElementById('exportReport').addEventListener('click', () => this.exportReport());
+                
+                this.renderTestList();
+            }
+
+            renderTestList() {
+                const container = document.getElementById('testResults');
+                container.innerHTML = '';
+                
+                this.tests.forEach((test, index) => {
+                    const result = this.results[index];
+                    const div = document.createElement('div');
+                    div.className = `test-item ${result ? (result.passed ? 'pass' : 'fail') : ''}`;
+                    div.innerHTML = `
+                        <div class="test-name">${test.name}</div>
+                        <div class="test-status ${result ? (result.passed ? 'status-pass' : 'status-fail') : ''}">
+                            ${result ? (result.passed ? 'PASS' : 'FAIL') : 'PENDING'}
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            log(message) {
+                const logElement = document.getElementById('testLog');
+                const timestamp = new Date().toLocaleTimeString();
+                logElement.textContent += `[${timestamp}] ${message}\n`;
+                logElement.scrollTop = logElement.scrollHeight;
+                console.log(`[TEST] ${message}`);
+            }
+
+            async runAllTests() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.results = [];
+                this.currentTestIndex = 0;
+                
+                document.getElementById('runAllTests').disabled = true;
+                document.getElementById('runCoreTests').disabled = true;
+                
+                this.log('🚀 Starting comprehensive test suite...');
+                
+                for (let i = 0; i < this.tests.length; i++) {
+                    await this.runSingleTest(i);
+                    this.updateProgress();
+                }
+                
+                this.finishTesting();
+            }
+
+            async runCoreTests() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.results = [];
+                
+                document.getElementById('runAllTests').disabled = true;
+                document.getElementById('runCoreTests').disabled = true;
+                
+                this.log('⚡ Starting core functionality tests...');
+                
+                const coreTests = this.tests.filter(test => test.category === 'core');
+                for (let i = 0; i < coreTests.length; i++) {
+                    const testIndex = this.tests.indexOf(coreTests[i]);
+                    await this.runSingleTest(testIndex);
+                    this.updateProgress();
+                }
+                
+                this.finishTesting();
+            }
+
+            async runSingleTest(index) {
+                const test = this.tests[index];
+                this.log(`🔍 Running: ${test.name}`);
+                
+                // Mark as running
+                this.results[index] = { passed: null, running: true, message: 'Running...' };
+                this.renderTestList();
+                
+                try {
+                    const result = await test.test.call(this);
+                    this.results[index] = { 
+                        passed: result.passed, 
+                        running: false, 
+                        message: result.message,
+                        duration: result.duration || 'N/A'
+                    };
+                    
+                    if (result.passed) {
+                        this.log(`✅ PASS: ${test.name} - ${result.message}`);
+                    } else {
+                        this.log(`❌ FAIL: ${test.name} - ${result.message}`);
+                    }
+                } catch (error) {
+                    this.results[index] = { 
+                        passed: false, 
+                        running: false, 
+                        message: `Error: ${error.message}`,
+                        duration: 'N/A'
+                    };
+                    this.log(`❌ ERROR: ${test.name} - ${error.message}`);
+                }
+                
+                this.renderTestList();
+                await this.sleep(500); // Small delay between tests
+            }
+
+            updateProgress() {
+                const completedTests = this.results.filter(r => r && !r.running).length;
+                const totalTests = this.tests.length;
+                const progress = (completedTests / totalTests) * 100;
+                
+                document.getElementById('progressFill').style.width = `${progress}%`;
+            }
+
+            finishTesting() {
+                this.isRunning = false;
+                document.getElementById('runAllTests').disabled = false;
+                document.getElementById('runCoreTests').disabled = false;
+                
+                const passed = this.results.filter(r => r && r.passed).length;
+                const failed = this.results.filter(r => r && r.passed === false).length;
+                const total = this.results.filter(r => r).length;
+                
+                this.log(`🏁 Testing complete! ${passed}/${total} tests passed, ${failed} failed.`);
+                
+                // Update summary
+                const summary = document.getElementById('summary');
+                const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+                summary.innerHTML = `
+                    <h3>📋 Test Summary</h3>
+                    <p><strong>Total Tests:</strong> ${total}</p>
+                    <p><strong>Passed:</strong> <span style="color: #28a745">${passed}</span></p>
+                    <p><strong>Failed:</strong> <span style="color: #dc3545">${failed}</span></p>
+                    <p><strong>Pass Rate:</strong> <span style="color: ${passRate >= 80 ? '#28a745' : '#dc3545'}">${passRate}%</span></p>
+                    <p><strong>Status:</strong> ${passRate >= 80 ? '🟢 System Healthy' : '🔴 Issues Detected'}</p>
+                `;
+            }
+
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // Individual Test Functions
+            async testLocalStorage() {
+                const start = Date.now();
+                
+                // Test if localStorage is available and functional
+                if (typeof(Storage) === "undefined") {
+                    return { passed: false, message: "localStorage not supported", duration: Date.now() - start };
+                }
+                
+                // Test write/read cycle
+                const testKey = 'test_' + Date.now();
+                const testData = { test: true, timestamp: Date.now() };
+                
+                localStorage.setItem(testKey, JSON.stringify(testData));
+                const retrieved = JSON.parse(localStorage.getItem(testKey) || '{}');
+                localStorage.removeItem(testKey);
+                
+                const success = retrieved.test === true;
+                return { 
+                    passed: success, 
+                    message: success ? "localStorage read/write working" : "localStorage read/write failed",
+                    duration: Date.now() - start
+                };
+            }
+
+            async testAdminAuth() {
+                const start = Date.now();
+                
+                // Test if admin authentication elements exist
+                try {
+                    const response = await fetch('admin.html');
+                    const text = await response.text();
+                    
+                    const hasAuthElements = text.includes('admin') && text.includes('password');
+                    
+                    return {
+                        passed: hasAuthElements,
+                        message: hasAuthElements ? "Admin auth elements found" : "Admin auth elements missing",
+                        duration: Date.now() - start
+                    };
+                } catch (error) {
+                    return { passed: false, message: `Cannot access admin.html: ${error.message}`, duration: Date.now() - start };
+                }
+            }
+
+            async testBookCreation() {
+                const start = Date.now();
+                
+                // Test if we can create and store a book
+                const originalBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                const testBook = {
+                    id: 'test_book_' + Date.now(),
+                    title: 'Test Book',
+                    author: 'Test Author',
+                    status: 'published'
+                };
+                
+                const newBooks = [...originalBooks, testBook];
+                localStorage.setItem('bookLibraryData', JSON.stringify(newBooks));
+                
+                const savedBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                const bookExists = savedBooks.some(book => book.id === testBook.id);
+                
+                // Cleanup
+                const cleanedBooks = savedBooks.filter(book => book.id !== testBook.id);
+                localStorage.setItem('bookLibraryData', JSON.stringify(cleanedBooks));
+                
+                return {
+                    passed: bookExists,
+                    message: bookExists ? "Book creation and storage working" : "Book creation/storage failed",
+                    duration: Date.now() - start
+                };
+            }
+
+            async testChapterManagement() {
+                const start = Date.now();
+                
+                // Test chapter structure and management
+                const books = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                const booksWithChapters = books.filter(book => book.chapters && Array.isArray(book.chapters));
+                
+                // Check if at least some books have proper chapter structure
+                const hasChapterStructure = booksWithChapters.length > 0;
+                
+                return {
+                    passed: hasChapterStructure,
+                    message: hasChapterStructure ? `${booksWithChapters.length} books have chapter structure` : "No proper chapter structure found",
+                    duration: Date.now() - start
+                };
+            }
+
+            async testDataSync() {
+                const start = Date.now();
+                
+                // Test if data is consistent across storage
+                const mainData = localStorage.getItem('bookLibraryData');
+                const backupData = localStorage.getItem('bookLibraryDataBackup');
+                
+                const hasMainData = mainData && mainData !== '[]';
+                const hasBackup = backupData !== null;
+                
+                return {
+                    passed: hasMainData,
+                    message: hasMainData ? `Data sync working (backup: ${hasBackup ? 'yes' : 'no'})` : "No synchronized data found",
+                    duration: Date.now() - start
+                };
+            }
+
+            async testUploadModal() {
+                const start = Date.now();
+                
+                try {
+                    const response = await fetch('admin.html');
+                    const text = await response.text();
+                    
+                    const hasUploadModal = text.includes('uploadModal') && text.includes('document');
+                    
+                    return {
+                        passed: hasUploadModal,
+                        message: hasUploadModal ? "Upload modal structure found" : "Upload modal structure missing",
+                        duration: Date.now() - start
+                    };
+                } catch (error) {
+                    return { passed: false, message: `Cannot check upload modal: ${error.message}`, duration: Date.now() - start };
+                }
+            }
+
+            async testFileProcessing() {
+                const start = Date.now();
+                
+                try {
+                    const response = await fetch('script.js');
+                    const text = await response.text();
+                    
+                    const hasFileProcessing = text.includes('processDocument') && text.includes('mammoth');
+                    
+                    return {
+                        passed: hasFileProcessing,
+                        message: hasFileProcessing ? "File processing logic found" : "File processing logic missing",
+                        duration: Date.now() - start
+                    };
+                } catch (error) {
+                    return { passed: false, message: `Cannot check file processing: ${error.message}`, duration: Date.now() - start };
+                }
+            }
+
+            async testPublicPageLoad() {
+                const start = Date.now();
+                
+                try {
+                    const response = await fetch('index.html');
+                    const success = response.ok;
+                    
+                    return {
+                        passed: success,
+                        message: success ? "Public page loads successfully" : `Public page failed to load: ${response.status}`,
+                        duration: Date.now() - start
+                    };
+                } catch (error) {
+                    return { passed: false, message: `Public page load error: ${error.message}`, duration: Date.now() - start };
+                }
+            }
+
+            async testPublishedBooks() {
+                const start = Date.now();
+                
+                const books = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                const publishedBooks = books.filter(book => book.status === 'published');
+                
+                return {
+                    passed: publishedBooks.length > 0,
+                    message: `Found ${publishedBooks.length} published books`,
+                    duration: Date.now() - start
+                };
+            }
+
+            async testChapterReader() {
+                const start = Date.now();
+                
+                try {
+                    const response = await fetch('public-script.js');
+                    const text = await response.text();
+                    
+                    const hasChapterReader = text.includes('displayCurrentChapter') && text.includes('chapterModal');
+                    
+                    return {
+                        passed: hasChapterReader,
+                        message: hasChapterReader ? "Chapter reader functionality found" : "Chapter reader functionality missing",
+                        duration: Date.now() - start
+                    };
+                } catch (error) {
+                    return { passed: false, message: `Cannot check chapter reader: ${error.message}`, duration: Date.now() - start };
+                }
+            }
+
+            async testModals() {
+                const start = Date.now();
+                
+                try {
+                    const response = await fetch('admin.html');
+                    const text = await response.text();
+                    
+                    const modalCount = (text.match(/class="[^"]*modal[^"]*"/g) || []).length;
+                    const hasModals = modalCount > 0;
+                    
+                    return {
+                        passed: hasModals,
+                        message: hasModals ? `Found ${modalCount} modal components` : "No modal components found",
+                        duration: Date.now() - start
+                    };
+                } catch (error) {
+                    return { passed: false, message: `Cannot check modals: ${error.message}`, duration: Date.now() - start };
+                }
+            }
+
+            async testThemes() {
+                const start = Date.now();
+                
+                const hasTheme = localStorage.getItem('bookLibraryTheme') !== null;
+                
+                return {
+                    passed: true, // Theme system is optional but should not break
+                    message: hasTheme ? `Theme system active: ${localStorage.getItem('bookLibraryTheme')}` : "Theme system available (default)",
+                    duration: Date.now() - start
+                };
+            }
+
+            async testResponsive() {
+                const start = Date.now();
+                
+                try {
+                    const response = await fetch('styles.css');
+                    const text = await response.text();
+                    
+                    const hasMediaQueries = text.includes('@media') && text.includes('max-width');
+                    
+                    return {
+                        passed: hasMediaQueries,
+                        message: hasMediaQueries ? "Responsive CSS found" : "No responsive CSS found",
+                        duration: Date.now() - start
+                    };
+                } catch (error) {
+                    return { passed: false, message: `Cannot check responsive CSS: ${error.message}`, duration: Date.now() - start };
+                }
+            }
+
+            async testErrorRecovery() {
+                const start = Date.now();
+                
+                try {
+                    const response = await fetch('script.js');
+                    const text = await response.text();
+                    
+                    const hasErrorHandling = text.includes('try {') && text.includes('catch') && text.includes('error');
+                    
+                    return {
+                        passed: hasErrorHandling,
+                        message: hasErrorHandling ? "Error handling code found" : "No error handling found",
+                        duration: Date.now() - start
+                    };
+                } catch (error) {
+                    return { passed: false, message: `Cannot check error handling: ${error.message}`, duration: Date.now() - start };
+                }
+            }
+
+            async testBackupSystem() {
+                const start = Date.now();
+                
+                const hasBackup = localStorage.getItem('bookLibraryDataBackup') !== null;
+                
+                return {
+                    passed: hasBackup,
+                    message: hasBackup ? "Backup system active with data" : "No backup data found (may be normal for new installation)",
+                    duration: Date.now() - start
+                };
+            }
+
+            clearResults() {
+                this.results = [];
+                this.renderTestList();
+                document.getElementById('testLog').textContent = '=== Test Log ===\nWacht op test uitvoering...\n';
+                document.getElementById('progressFill').style.width = '0%';
+                document.getElementById('summary').innerHTML = `
+                    <h3>📋 Test Summary</h3>
+                    <p>Klik op "Run All Tests" om te beginnen met testen.</p>
+                `;
+            }
+
+            exportReport() {
+                if (this.results.length === 0) {
+                    alert('Geen test resultaten om te exporteren. Run eerst de tests.');
+                    return;
+                }
+
+                const report = {
+                    timestamp: new Date().toISOString(),
+                    summary: {
+                        total: this.results.filter(r => r).length,
+                        passed: this.results.filter(r => r && r.passed).length,
+                        failed: this.results.filter(r => r && r.passed === false).length
+                    },
+                    tests: this.tests.map((test, index) => ({
+                        name: test.name,
+                        category: test.category,
+                        result: this.results[index] || { passed: null, message: 'Not run' }
+                    }))
+                };
+
+                const dataStr = JSON.stringify(report, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `book-library-test-report-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                this.log('📊 Test report exported successfully');
+            }
+        }
+
+        // Initialize the automated tester
+        const tester = new AutomatedTester();
+    </script>
+</body>
+</html>

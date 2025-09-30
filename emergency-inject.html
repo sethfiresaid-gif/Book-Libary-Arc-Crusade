@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Emergency Book Injector</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #dc3545;
+            margin-bottom: 30px;
+        }
+        .emergency-section {
+            margin: 25px 0;
+            padding: 20px;
+            border: 2px solid #dc3545;
+            border-radius: 12px;
+            background: #fff5f5;
+        }
+        .btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.success:hover {
+            background: #218838;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+        .book-display {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+        .counter {
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .before { color: #dc3545; }
+        .after { color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Emergency Book Injector</h1>
+        <p style="text-align: center; font-size: 18px; color: #666;">
+            Directe oplossing voor ontbrekende boeken probleem
+        </p>
+        
+        <div class="emergency-section">
+            <h3>📊 Huidige Status</h3>
+            <div style="display: flex; justify-content: space-around;">
+                <div>
+                    <div class="counter before" id="beforeCount">?</div>
+                    <p style="text-align: center;">Boeken in Browser</p>
+                </div>
+                <div style="font-size: 2em; display: flex; align-items: center;">➜</div>
+                <div>
+                    <div class="counter after" id="afterCount">4</div>
+                    <p style="text-align: center;">Gewenste Boeken</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="emergency-section">
+            <button onclick="injectMissingBook()" class="btn">
+                🚀 FORCE ADD STRANGERS FIRE BOEK
+            </button>
+            <button onclick="showCurrentBooks()" class="btn" style="background: #6c757d;">
+                📚 Toon Huidige Boeken
+            </button>
+            <button onclick="testPages()" class="btn success">
+                ✅ Test Admin & Publiek
+            </button>
+        </div>
+
+        <div id="statusDisplay"></div>
+        <div id="bookDisplay"></div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('statusDisplay');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function updateBookDisplay(books) {
+            const displayDiv = document.getElementById('bookDisplay');
+            let display = `=== BOEKEN IN LOCALSTORAGE (${books.length}) ===\n\n`;
+            
+            books.forEach((book, index) => {
+                display += `${index + 1}. "${book.title || 'Geen titel'}"\n`;
+                display += `   ID: ${book.id}\n`;
+                display += `   Auteur: ${book.author || 'Onbekend'}\n`;
+                display += `   Status: ${book.status || 'Onbekend'}\n`;
+                display += `   Hoofdstukken: ${book.chapters ? book.chapters.length : 0}\n`;
+                display += `   Aangemaakt: ${book.createdAt || book.dateCreated || 'Onbekend'}\n\n`;
+            });
+            
+            displayDiv.innerHTML = `<div class="book-display">${display}</div>`;
+        }
+
+        function showCurrentBooks() {
+            try {
+                const books = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                document.getElementById('beforeCount').textContent = books.length;
+                updateBookDisplay(books);
+                
+                if (books.length === 3) {
+                    updateStatus('⚠️ Inderdaad maar 3 boeken gevonden - 4e boek ontbreekt!', 'warning');
+                } else if (books.length === 4) {
+                    updateStatus('✅ Alle 4 boeken aanwezig in localStorage!', 'success');
+                } else {
+                    updateStatus(`📊 ${books.length} boeken gevonden in localStorage`, 'warning');
+                }
+            } catch (error) {
+                updateStatus(`❌ Fout bij laden boeken: ${error.message}`, 'error');
+            }
+        }
+
+        function injectMissingBook() {
+            try {
+                updateStatus('🔄 Bezig met toevoegen van ontbrekend boek...', 'warning');
+                
+                // Get current books
+                const currentBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                
+                console.log('Current books before injection:', currentBooks);
+                
+                // Check if Strangers Fire already exists
+                const strangersFireExists = currentBooks.some(book => 
+                    book.title && book.title.toLowerCase().includes('strangers fire')
+                );
+                
+                if (strangersFireExists) {
+                    updateStatus('✅ Strangers Fire boek bestaat al!', 'success');
+                    showCurrentBooks();
+                    return;
+                }
+                
+                // Create the missing Strangers Fire book
+                const strangersFireBook = {
+                    id: 'strangers_fire_' + Date.now(),
+                    title: 'Strangers Fire',
+                    author: 'Arc Crusade',
+                    genre: 'adventure',
+                    status: 'published',
+                    description: 'Een episch avontuur over vreemdelingen en vuur, gevuld met mysterie en moed.',
+                    coverImage: 'https://via.placeholder.com/300x400/667eea/white?text=Strangers+Fire',
+                    pages: 280,
+                    progress: 100,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    dateCreated: new Date().toISOString().split('T')[0],
+                    chapters: [
+                        {
+                            id: 'sf_chapter_1',
+                            title: 'Hoofdstuk 1: De Vreemdelingen Arriveren',
+                            content: `Het was een donkere avond toen de vreemdelingen voor het eerst in ons dorp verschenen. Hun ogen gloeiden als vuur in de duisternis, en hun aanwezigheid bracht een vreemde energie met zich mee die de lucht deed trillen.
+
+Ik stond bij het raam van mijn kamer en keek naar buiten toen ik ze zag. Drie gestalten in donkere mantels, langzaam lopend over de hoofdstraat. Niemand anders leek ze op te merken, alsof ze onzichtbaar waren voor de rest van de wereld.
+
+Maar ik kon ze zien. Ik kon het vuur in hun ogen zien branden, en ik voelde hoe mijn eigen hart sneller begon te kloppen. Er was iets speciaals aan deze vreemdelingen, iets wat mijn leven voor altijd zou veranderen.
+
+Dit was het begin van mijn avontuur met het vuur...`,
+                            status: 'complete',
+                            wordCount: 142,
+                            notes: 'Introductie van de mysterieuze vreemdelingen',
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        },
+                        {
+                            id: 'sf_chapter_2',
+                            title: 'Hoofdstuk 2: Het Vuur Ontwaakt',
+                            content: `De volgende ochtend was alles anders. Toen ik wakker werd, voelde ik een warmte in mijn handen die er eerder niet was geweest. Ik keek naar mijn handpalmen en zag tot mijn verbazing kleine vlammetjes dansen op mijn huid, zonder me pijn te doen.
+
+"Wat gebeurt er met me?" fluisterde ik tegen mezelf, terwijl ik gefascineerd naar het vuur keek dat uit mijn vingers kwam.
+
+Een zachte klop op mijn deur onderbrak mijn gedachten. "Kom binnen," riep ik, snel mijn handen achter mijn rug verstoppend.
+
+Een van de vreemdelingen van gisteravond stond in de deuropening. Zijn capuchon was nu afgezakt, en ik kon zijn gezicht zien - oud en wijs, met ogen die inderdaad gloeiden als vuur.
+
+"Je hebt het gevoel, nietwaar?" zei hij met een stem die klonk als knetterend hout. "Het vuur roept je."
+
+En zo begon mijn training in de kunst van het vuur...`,
+                            status: 'complete',
+                            wordCount: 156,
+                            notes: 'Ontdekking van vuurkrachten',
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        }
+                    ],
+                    notes: {
+                        general: 'Een verhaal over een jonge persoon die magische vuurkrachten ontdekt',
+                        characters: [
+                            { name: 'Protagonist', description: 'Jonge persoon met vuurkrachten' },
+                            { name: 'De Vuurmeester', description: 'Mysterieuze leermeester' }
+                        ],
+                        worldbuilding: 'Een wereld waar vuur magie bestaat en vreemdelingen speciale krachten brengen',
+                        plot: 'Ontdekking van krachten -> Training -> Avontuur'
+                    }
+                };
+                
+                // Add the new book to the array
+                const updatedBooks = [...currentBooks, strangersFireBook];
+                
+                // Force save to localStorage
+                localStorage.setItem('bookLibraryData', JSON.stringify(updatedBooks));
+                
+                // Also create backup
+                const backupData = {
+                    books: updatedBooks,
+                    lastSaved: new Date().toISOString(),
+                    source: 'emergency_injection'
+                };
+                localStorage.setItem('bookLibraryDataBackup', JSON.stringify(backupData));
+                
+                console.log('Books after injection:', updatedBooks);
+                
+                // Verify the save worked
+                setTimeout(() => {
+                    const verifyBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                    if (verifyBooks.length === currentBooks.length + 1) {
+                        updateStatus('🎉 SUCCESS! Strangers Fire boek toegevoegd en opgeslagen!', 'success');
+                        document.getElementById('afterCount').textContent = verifyBooks.length;
+                        showCurrentBooks();
+                    } else {
+                        updateStatus('❌ Save verificatie gefaald - probeer opnieuw', 'error');
+                    }
+                }, 100);
+                
+            } catch (error) {
+                updateStatus(`❌ FOUT bij toevoegen boek: ${error.message}`, 'error');
+                console.error('Injection error:', error);
+            }
+        }
+
+        function testPages() {
+            // Open both pages to test
+            const adminWindow = window.open('admin.html', '_blank');
+            const publicWindow = window.open('index.html', '_blank');
+            
+            updateStatus('🔗 Admin en publieke pagina geopend - controleer of alle 4 boeken zichtbaar zijn!', 'success');
+            
+            // Auto-check after a delay
+            setTimeout(() => {
+                const currentBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                if (currentBooks.length >= 4) {
+                    updateStatus('✅ PERFECT! Ga naar de geopende tabbladen om te controleren.', 'success');
+                }
+            }, 1000);
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            showCurrentBooks();
+            updateStatus('🚨 Emergency Book Injector geladen - klik op "FORCE ADD" om het ontbrekende boek toe te voegen!', 'warning');
+        });
+    </script>
+</body>
+</html>

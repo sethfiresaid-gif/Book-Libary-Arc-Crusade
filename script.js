@@ -44,6 +44,11 @@ class BookLibrary {
             this.saveDataToStorage();
             console.log('⏰ Periodic auto-save completed');
         }, 30000);
+        
+        // Data integrity check every 2 minutes
+        setInterval(() => {
+            this.performDataIntegrityCheck();
+        }, 120000);
     }
 
     bindEventListeners() {
@@ -86,6 +91,14 @@ class BookLibrary {
         document.getElementById('closeUploadBtn')?.addEventListener('click', () => this.closeModal('uploadModal'));
         document.getElementById('cancelUploadBtn')?.addEventListener('click', () => this.closeModal('uploadModal'));
         document.getElementById('processUploadBtn')?.addEventListener('click', () => this.processDocument());
+        
+        // Force sync control
+        document.getElementById('forceSyncBtn')?.addEventListener('click', () => this.forceSyncData());
+        
+        // Preview public page
+        document.getElementById('previewPublicBtn')?.addEventListener('click', () => {
+            window.open('index.html', '_blank');
+        });
         document.getElementById('fullscreenBtn')?.addEventListener('click', () => this.toggleFullscreen());
         document.getElementById('saveChapterContentBtn')?.addEventListener('click', () => this.saveChapterContent(true));
         
@@ -293,7 +306,26 @@ class BookLibrary {
         
         this.books.unshift(book);
         this.addActivity('create', `Nieuw boek "${bookData.title}" aangemaakt`);
+        
+        // Force save with verification
         this.saveDataToStorage();
+        console.log('💾 New book saved:', {
+            title: book.title,
+            id: book.id,
+            totalBooks: this.books.length
+        });
+        
+        // Verify book was saved
+        setTimeout(() => {
+            const savedBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+            const bookExists = savedBooks.some(b => b.id === book.id);
+            if (bookExists) {
+                console.log('✅ Book save verified');
+            } else {
+                console.error('❌ Book save failed - attempting recovery');
+                this.saveDataToStorage();
+            }
+        }, 100);
     }
 
     updateBook(bookId, bookData) {
@@ -1109,7 +1141,23 @@ class BookLibrary {
         this.closeModal('chapterEditModal');
         this.showModal('chapterModal');
         this.renderChapters();
+        
+        // Force save data with verification
         this.saveDataToStorage();
+        console.log('💾 Chapter data saved after submit');
+        
+        // Double-check data was saved
+        setTimeout(() => {
+            const savedBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+            const savedBook = savedBooks.find(b => b.id === this.currentBookId);
+            if (savedBook && savedBook.chapters) {
+                console.log('✅ Chapter save verified:', {
+                    bookTitle: savedBook.title,
+                    chapterCount: savedBook.chapters.length,
+                    lastChapter: savedBook.chapters[savedBook.chapters.length - 1]?.title
+                });
+            }
+        }, 100);
     }
 
     deleteChapter(chapterId) {
@@ -1481,8 +1529,27 @@ class BookLibrary {
         // Update word count
         this.updateWriterStats();
         
-        // Save to localStorage
+        // Save to localStorage with verification
         this.saveDataToStorage();
+        console.log('💾 Chapter content saved:', {
+            bookId: this.currentWriterBookId,
+            chapterId: this.currentWriterChapterId,
+            contentLength: content.length
+        });
+        
+        // Verify save was successful
+        setTimeout(() => {
+            const savedBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+            const book = savedBooks.find(b => b.id === this.currentWriterBookId);
+            const chapter = book?.chapters?.find(c => c.id === this.currentWriterChapterId);
+            if (chapter && chapter.content) {
+                console.log('✅ Chapter content save verified');
+            } else {
+                console.error('❌ Chapter content save failed - attempting recovery');
+                // Try to save again
+                this.saveDataToStorage();
+            }
+        }, 100);
         
         // Update UI indicators
         this.showAutoSaveIndicator('saved');
@@ -1843,6 +1910,98 @@ class BookLibrary {
         });
         
         return chapters;
+    }
+
+    // Data integrity check and recovery function
+    performDataIntegrityCheck() {
+        try {
+            console.log('🔍 Performing data integrity check...');
+            
+            // Check if main data exists
+            const mainData = localStorage.getItem('bookLibraryData');
+            const backupData = localStorage.getItem('bookLibraryDataBackup');
+            
+            if (!mainData && backupData) {
+                console.log('🔄 Main data missing, recovering from backup...');
+                const backup = JSON.parse(backupData);
+                if (backup.books && Array.isArray(backup.books)) {
+                    localStorage.setItem('bookLibraryData', JSON.stringify(backup.books));
+                    this.books = backup.books;
+                    console.log('✅ Data recovered from backup:', backup.books.length, 'books');
+                    this.renderBooks();
+                }
+                return;
+            }
+            
+            if (mainData) {
+                const parsedData = JSON.parse(mainData);
+                
+                // Verify data structure
+                if (!Array.isArray(parsedData)) {
+                    console.warn('⚠️ Invalid data structure detected, reinitializing...');
+                    this.books = [];
+                    this.saveDataToStorage();
+                    return;
+                }
+                
+                // Check for data corruption
+                let corruptionFound = false;
+                parsedData.forEach((book, index) => {
+                    if (!book.id || !book.title) {
+                        console.warn(`⚠️ Corrupted book found at index ${index}:`, book);
+                        corruptionFound = true;
+                    }
+                    
+                    if (book.chapters && !Array.isArray(book.chapters)) {
+                        console.warn(`⚠️ Corrupted chapters in book ${book.title}`);
+                        book.chapters = [];
+                        corruptionFound = true;
+                    }
+                });
+                
+                if (corruptionFound) {
+                    console.log('🔧 Fixing corrupted data...');
+                    this.books = parsedData.filter(book => book.id && book.title);
+                    this.saveDataToStorage();
+                }
+                
+                // Verify current memory matches storage
+                if (JSON.stringify(this.books) !== JSON.stringify(parsedData) && !corruptionFound) {
+                    console.log('🔄 Memory and storage out of sync, updating storage...');
+                    this.saveDataToStorage();
+                }
+            }
+            
+            console.log('✅ Data integrity check completed');
+            
+        } catch (error) {
+            console.error('❌ Data integrity check failed:', error);
+            
+            // Emergency recovery - try to save current state
+            try {
+                this.saveDataToStorage();
+                console.log('🆘 Emergency save completed');
+            } catch (saveError) {
+                console.error('❌ Emergency save failed:', saveError);
+            }
+        }
+    }
+
+    // Force sync function that can be called manually
+    forceSyncData() {
+        console.log('🔄 Force syncing data...');
+        this.saveDataToStorage();
+        
+        setTimeout(() => {
+            const savedData = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+            if (JSON.stringify(this.books) === JSON.stringify(savedData)) {
+                console.log('✅ Force sync successful');
+                alert('Data succesvol gesynchroniseerd!');
+            } else {
+                console.error('❌ Force sync failed');
+                alert('Synchronisatie mislukt - probeer opnieuw');
+            }
+        }, 100);
     }
 }
 

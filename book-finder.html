@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Book Finder - Strangers Fire</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+        .search-section {
+            margin: 25px 0;
+            padding: 20px;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            background: #f8f9ff;
+        }
+        .book-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .book-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .book-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status-published {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-in-progress {
+            background: #cce7ff;
+            color: #004085;
+        }
+        .book-details {
+            color: #666;
+            font-size: 14px;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.success:hover {
+            background: #218838;
+        }
+        .btn.danger {
+            background: #dc3545;
+        }
+        .btn.danger:hover {
+            background: #c82333;
+        }
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Book Finder - Strangers Fire</h1>
+        
+        <div class="controls">
+            <button onclick="searchStrangersFire()" class="btn">🔍 Zoek Strangers Fire</button>
+            <button onclick="showAllBooks()" class="btn">📚 Toon Alle Boeken</button>
+            <button onclick="fixStrangersFire()" class="btn success">✅ Maak Strangers Fire Zichtbaar</button>
+            <button onclick="refreshPages()" class="btn">🔄 Ververs Pagina's</button>
+        </div>
+
+        <div id="results"></div>
+
+        <div class="search-section">
+            <h3>📋 Diagnostics</h3>
+            <div id="diagnostics"></div>
+        </div>
+
+        <div class="search-section">
+            <h3>🔧 Raw Data</h3>
+            <pre id="rawData">Klik op "Zoek Strangers Fire" om data te laden...</pre>
+        </div>
+    </div>
+
+    <script>
+        function searchStrangersFire() {
+            const resultsDiv = document.getElementById('results');
+            const diagnosticsDiv = document.getElementById('diagnostics');
+            const rawDataPre = document.getElementById('rawData');
+            
+            try {
+                // Get all books from storage
+                const allBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                
+                console.log('All books in storage:', allBooks);
+                
+                // Search for Strangers Fire (case insensitive)
+                const strangersFire = allBooks.filter(book => 
+                    book.title && book.title.toLowerCase().includes('strangers fire')
+                );
+                
+                const exactMatch = allBooks.filter(book => 
+                    book.title && book.title.toLowerCase() === 'strangers fire'
+                );
+                
+                // Search for any book with "stranger" or "fire" in the title
+                const partialMatches = allBooks.filter(book => 
+                    book.title && (
+                        book.title.toLowerCase().includes('stranger') || 
+                        book.title.toLowerCase().includes('fire')
+                    )
+                );
+                
+                // Display results
+                let html = '<div class="search-section"><h3>🎯 Zoekresultaten</h3>';
+                
+                if (exactMatch.length > 0) {
+                    html += '<div class="alert alert-success">✅ "Strangers Fire" gevonden!</div>';
+                    exactMatch.forEach(book => {
+                        html += createBookHTML(book);
+                    });
+                } else if (strangersFire.length > 0) {
+                    html += '<div class="alert alert-warning">⚠️ Vergelijkbare boeken gevonden:</div>';
+                    strangersFire.forEach(book => {
+                        html += createBookHTML(book);
+                    });
+                } else if (partialMatches.length > 0) {
+                    html += '<div class="alert alert-warning">🔍 Gedeeltelijke matches gevonden:</div>';
+                    partialMatches.forEach(book => {
+                        html += createBookHTML(book);
+                    });
+                } else {
+                    html += '<div class="alert alert-error">❌ "Strangers Fire" niet gevonden in storage!</div>';
+                }
+                
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+                
+                // Diagnostics
+                const publishedBooks = allBooks.filter(book => book.status === 'published');
+                const draftBooks = allBooks.filter(book => book.status === 'draft');
+                const inProgressBooks = allBooks.filter(book => book.status === 'in-progress');
+                
+                diagnosticsDiv.innerHTML = `
+                    <p><strong>Totaal boeken in storage:</strong> ${allBooks.length}</p>
+                    <p><strong>Gepubliceerde boeken:</strong> ${publishedBooks.length}</p>
+                    <p><strong>Draft boeken:</strong> ${draftBooks.length}</p>
+                    <p><strong>In-progress boeken:</strong> ${inProgressBooks.length}</p>
+                    <p><strong>Backup data aanwezig:</strong> ${localStorage.getItem('bookLibraryDataBackup') ? 'Ja' : 'Nee'}</p>
+                `;
+                
+                // Raw data
+                rawDataPre.textContent = JSON.stringify({
+                    totalBooks: allBooks.length,
+                    books: allBooks.map(book => ({
+                        id: book.id,
+                        title: book.title,
+                        author: book.author,
+                        status: book.status,
+                        chapters: book.chapters ? book.chapters.length : 0
+                    })),
+                    searchResults: {
+                        exactMatch: exactMatch.length,
+                        strangersFire: strangersFire.length,
+                        partialMatches: partialMatches.length
+                    }
+                }, null, 2);
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="alert alert-error">❌ Fout bij zoeken: ${error.message}</div>`;
+                console.error('Search error:', error);
+            }
+        }
+
+        function createBookHTML(book) {
+            const statusClass = `status-${book.status || 'unknown'}`;
+            return `
+                <div class="book-item">
+                    <div class="book-title">${book.title || 'Geen titel'}</div>
+                    <div class="book-status ${statusClass}">${book.status || 'Onbekend'}</div>
+                    <div class="book-details">
+                        <strong>ID:</strong> ${book.id || 'Geen ID'}<br>
+                        <strong>Auteur:</strong> ${book.author || 'Onbekend'}<br>
+                        <strong>Hoofdstukken:</strong> ${book.chapters ? book.chapters.length : 0}<br>
+                        <strong>Aangemaakt:</strong> ${book.createdAt || book.dateCreated || 'Onbekend'}<br>
+                        <strong>Laatst gewijzigd:</strong> ${book.updatedAt || 'Onbekend'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function showAllBooks() {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                const allBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                
+                let html = '<div class="search-section"><h3>📚 Alle Boeken in Storage</h3>';
+                
+                if (allBooks.length === 0) {
+                    html += '<div class="alert alert-warning">⚠️ Geen boeken gevonden in storage!</div>';
+                } else {
+                    allBooks.forEach(book => {
+                        html += createBookHTML(book);
+                    });
+                }
+                
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="alert alert-error">❌ Fout bij laden van boeken: ${error.message}</div>`;
+            }
+        }
+
+        function fixStrangersFire() {
+            try {
+                const allBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                
+                // Find Strangers Fire book (any variant)
+                const strangersFireIndex = allBooks.findIndex(book => 
+                    book.title && book.title.toLowerCase().includes('strangers fire')
+                );
+                
+                if (strangersFireIndex !== -1) {
+                    // Make sure it's published
+                    allBooks[strangersFireIndex].status = 'published';
+                    
+                    // Save back to storage
+                    localStorage.setItem('bookLibraryData', JSON.stringify(allBooks));
+                    
+                    alert('✅ Strangers Fire is nu gepubliceerd en zou zichtbaar moeten zijn!');
+                    searchStrangersFire(); // Refresh results
+                } else {
+                    alert('❌ Strangers Fire niet gevonden in storage. Controleer of het boek bestaat.');
+                }
+                
+            } catch (error) {
+                alert(`❌ Fout bij repareren: ${error.message}`);
+            }
+        }
+
+        function refreshPages() {
+            // Force refresh admin and public pages
+            const adminWindow = window.open('admin.html', '_blank');
+            const publicWindow = window.open('index.html', '_blank');
+            
+            alert('🔄 Admin en publieke pagina geopend in nieuwe tabbladen');
+        }
+
+        // Auto-search on load
+        window.addEventListener('load', () => {
+            searchStrangersFire();
+        });
+    </script>
+</body>
+</html>

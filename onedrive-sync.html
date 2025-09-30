@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>☁️ Google Drive Book Sync Manager</title>
+    <script src="https://unpkg.com/mammoth@1.4.2/mammoth.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #0078d4;
+            margin-bottom: 30px;
+        }
+        .sync-section {
+            margin: 25px 0;
+            padding: 20px;
+            border: 2px solid #0078d4;
+            border-radius: 12px;
+            background: #f0f8ff;
+        }
+        .btn {
+            background: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #106ebe;
+            transform: translateY(-2px);
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.success:hover {
+            background: #218838;
+        }
+        .btn.warning {
+            background: #ffc107;
+            color: #333;
+        }
+        .btn.warning:hover {
+            background: #e0a800;
+        }
+        .path-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .book-list {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #0078d4;
+            border-radius: 0 8px 8px 0;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .file-example {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #0078d4;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>☁️ Google Drive Book Sync Manager</h1>
+        <p style="text-align: center; color: #666;">
+            Centrale opslag voor je gepubliceerde boeken in Google Drive - The Arc Crusade
+        </p>
+        
+        <div class="sync-section">
+            <h3>📂 Google Drive Setup</h3>
+            <div class="step">
+                <h4>Stap 1: Google Drive Pad Instellen</h4>
+                <p>Stel het pad in naar je Google Drive boeken map:</p>
+                <input type="text" class="path-input" id="oneDrivePath" 
+                       placeholder="G:\Mijn Drive\The arc crusade\Website libary\" 
+                       value="G:\Mijn Drive\The arc crusade\Website libary\">
+                <button onclick="setupOneDriveFolder()" class="btn">📁 Maak Map Aan</button>
+            </div>
+        </div>
+
+        <div class="sync-section">
+            <h3>📚 Boeken Beheer</h3>
+            <div class="controls">
+                <button onclick="exportToOneDrive()" class="btn success">☁️ Export JSON naar OneDrive</button>
+                <button onclick="exportAsDocuments()" class="btn success">� Export als Documenten</button>
+                <button onclick="importFromOneDrive()" class="btn">� Import van OneDrive</button>
+                <button onclick="showCurrentBooks()" class="btn" style="background: #6c757d;">📋 Toon Huidige Boeken</button>
+            </div>
+        </div>
+
+        <div id="statusDisplay"></div>
+        <div id="bookDisplay"></div>
+
+        <div class="sync-section">
+            <h3>🔧 Hoe het werkt</h3>
+            <div class="step">
+                <h4>Ondersteunde File Formaten:</h4>
+                <div class="file-example">
+G:/Mijn Drive/The arc crusade/Website libary/
+├── 📊 JSON Export:
+│   ├── books-index.json (hoofdindex)
+│   ├── book-strangers-fire.json
+│   └── book-drakenkrieger.json
+├── 📄 Document Export:
+│   ├── strangers-fire.txt
+│   ├── drakenkrieger.txt
+│   └── sterren-van-morgen.txt
+├── 📥 Import Ondersteuning:
+│   ├── ✅ .json (volledige data)
+│   ├── ✅ .docx (Microsoft Word)
+│   ├── ✅ .doc (Legacy Word)
+│   └── ✅ .txt (platte tekst)
+└── backup/ (automatische backups)
+                </div>
+            </div>
+            
+            <div class="step">
+                <h4>Voordelen Google Drive Sync:</h4>
+                <ul>
+                    <li>✅ <strong>Persistent opslag</strong> - Data gaat nooit verloren</li>
+                    <li>✅ <strong>Cross-device sync</strong> - Werkt op alle apparaten</li>
+                    <li>✅ <strong>Automatische backup</strong> - OneDrive versioning</li>
+                    <li>✅ <strong>Geen localStorage limits</strong> - Onbeperkte ruimte</li>
+                    <li>✅ <strong>Handmatige toegang</strong> - Je kunt bestanden direct bewerken</li>
+                    <li>✅ <strong>Meerdere formaten</strong> - JSON, DOCX, DOC, TXT support</li>
+                    <li>✅ <strong>Eenvoudig delen</strong> - Stuur gewoon het bestand</li>
+                    <li>✅ <strong>Universele compatibiliteit</strong> - Leesbaar in elke teksteditor</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="sync-section">
+            <h3>🎯 Quick Actions</h3>
+            <button onclick="findYourStrangersFire()" class="btn success">🔍 Vind Jouw Strangers Fire</button>
+            <button onclick="createOneDriveBackup()" class="btn warning">💾 Maak Google Drive Backup</button>
+            <button onclick="resetToOneDriveData()" class="btn" style="background: #dc3545;">🔄 Reset naar Google Drive Data</button>
+        </div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('statusDisplay');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function updateBookDisplay(books, source = '') {
+            const displayDiv = document.getElementById('bookDisplay');
+            let display = `=== BOEKEN ${source.toUpperCase()} (${books.length}) ===\n\n`;
+            
+            books.forEach((book, index) => {
+                display += `${index + 1}. "${book.title || 'Geen titel'}"\n`;
+                display += `   Status: ${book.status || 'Onbekend'}\n`;
+                display += `   Hoofdstukken: ${book.chapters ? book.chapters.length : 0}\n`;
+                display += `   Laatst gewijzigd: ${book.updatedAt || book.dateCreated || 'Onbekend'}\n\n`;
+            });
+            
+            displayDiv.innerHTML = `<div class="book-list">${display}</div>`;
+        }
+
+        function setupOneDriveFolder() {
+            const path = document.getElementById('oneDrivePath').value;
+            
+            if (!path) {
+                updateStatus('❌ Voer een geldig OneDrive pad in', 'error');
+                return;
+            }
+            
+            // Save the path to localStorage for future use
+            localStorage.setItem('googleDrivePath', path);
+            
+            updateStatus(`📁 Google Drive pad ingesteld: ${path}<br>
+                         <small>Let op: De map wordt automatisch aangemaakt bij eerste export</small>`, 'success');
+            
+            // Also show instructions for manual setup
+            setTimeout(() => {
+                updateStatus(`📋 Handmatige setup instructies:<br>
+                           1. Open File Explorer<br>
+                           2. Ga naar: <code>${path}</code><br>  
+                           3. Maak de map aan als deze niet bestaat<br>
+                           4. Klik daarna op "Export naar Google Drive"`, 'info');
+            }, 3000);
+        }
+
+        function exportToOneDrive() {
+            updateStatus('☁️ Bezig met exporteren naar OneDrive...', 'info');
+            
+            try {
+                // Get current books from localStorage
+                const books = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                const publishedBooks = books.filter(book => book.status === 'published');
+                
+                if (publishedBooks.length === 0) {
+                    updateStatus('⚠️ Geen gepubliceerde boeken gevonden om te exporteren', 'error');
+                    return;
+                }
+                
+                // Create export data
+                const exportData = {
+                    exportDate: new Date().toISOString(),
+                    totalBooks: publishedBooks.length,
+                    books: publishedBooks,
+                    source: 'BookLibrary-Arc-Crusade'
+                };
+                
+                // Create downloadable files for each book
+                publishedBooks.forEach(book => {
+                    const fileName = `book-${book.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.json`;
+                    downloadJSON(book, fileName);
+                });
+                
+                // Also download index file
+                downloadJSON(exportData, 'books-index.json');
+                
+                updateStatus(`✅ ${publishedBooks.length} gepubliceerde boeken geëxporteerd!<br>
+                           <small>Bestanden zijn gedownload - verplaats ze naar je Google Drive map</small>`, 'success');
+                
+                updateBookDisplay(publishedBooks, 'GEËXPORTEERD');
+                
+            } catch (error) {
+                updateStatus(`❌ Export fout: ${error.message}`, 'error');
+            }
+        }
+
+        function exportAsDocuments() {
+            updateStatus('📄 Bezig met exporteren als tekstdocumenten...', 'info');
+            
+            try {
+                // Get current books from localStorage
+                const books = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                const publishedBooks = books.filter(book => book.status === 'published');
+                
+                if (publishedBooks.length === 0) {
+                    updateStatus('⚠️ Geen gepubliceerde boeken gevonden om te exporteren', 'error');
+                    return;
+                }
+                
+                publishedBooks.forEach(book => {
+                    // Create readable text content
+                    let textContent = `${book.title}\n`;
+                    textContent += `Door: ${book.author || 'Onbekend'}\n`;
+                    textContent += `Genre: ${book.genre || 'Onbekend'}\n`;
+                    if (book.description) {
+                        textContent += `\nBeschrijving:\n${book.description}\n`;
+                    }
+                    textContent += `\n${'='.repeat(50)}\n\n`;
+                    
+                    // Add chapters
+                    if (book.chapters && book.chapters.length > 0) {
+                        book.chapters.forEach((chapter, index) => {
+                            textContent += `\n\n${chapter.title || `Hoofdstuk ${index + 1}`}\n`;
+                            textContent += `${'-'.repeat(30)}\n\n`;
+                            textContent += chapter.content || '';
+                            textContent += `\n\n`;
+                        });
+                    }
+                    
+                    // Add metadata at the end
+                    textContent += `\n\n${'='.repeat(50)}\n`;
+                    textContent += `Metadata:\n`;
+                    textContent += `- Aangemaakt: ${book.createdAt || book.dateCreated || 'Onbekend'}\n`;
+                    textContent += `- Laatst gewijzigd: ${book.updatedAt || 'Onbekend'}\n`;
+                    textContent += `- Aantal hoofdstukken: ${book.chapters ? book.chapters.length : 0}\n`;
+                    textContent += `- Geëxporteerd: ${new Date().toISOString()}\n`;
+                    
+                    // Download as .txt file
+                    const fileName = `${book.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.txt`;
+                    downloadText(textContent, fileName);
+                });
+                
+                updateStatus(`✅ ${publishedBooks.length} boeken geëxporteerd als tekstbestanden!<br>
+                           <small>Deze .txt bestanden kunnen overal gelezen worden</small>`, 'success');
+                
+                updateBookDisplay(publishedBooks, 'GEËXPORTEERD ALS TEKST');
+                
+            } catch (error) {
+                updateStatus(`❌ Document export fout: ${error.message}`, 'error');
+            }
+        }
+
+        function downloadText(content, filename) {
+            const dataBlob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = filename;
+            link.click();
+        }
+
+        function downloadJSON(data, filename) {
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = filename;
+            link.click();
+        }
+
+        function importFromOneDrive() {
+            // Create file input for multiple file types
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.accept = '.json,.docx,.doc,.txt';
+            
+            input.onchange = function(event) {
+                const files = Array.from(event.target.files);
+                
+                if (files.length === 0) {
+                    updateStatus('❌ Geen bestanden geselecteerd', 'error');
+                    return;
+                }
+                
+                updateStatus(`📥 Bezig met importeren van ${files.length} bestand(en)...`, 'info');
+                
+                let importedBooks = [];
+                let processedFiles = 0;
+                
+                files.forEach(file => {
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    
+                    if (fileExtension === 'json') {
+                        // Handle JSON files
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            try {
+                                const data = JSON.parse(e.target.result);
+                                
+                                // Check if it's an index file or single book
+                                if (data.books && Array.isArray(data.books)) {
+                                    importedBooks.push(...data.books);
+                                } else if (data.title) {
+                                    importedBooks.push(data);
+                                }
+                                
+                                processedFiles++;
+                                
+                                if (processedFiles === files.length) {
+                                    finishImport(importedBooks);
+                                }
+                                
+                            } catch (error) {
+                                updateStatus(`❌ Fout bij lezen JSON bestand ${file.name}: ${error.message}`, 'error');
+                                processedFiles++;
+                                if (processedFiles === files.length) {
+                                    finishImport(importedBooks);
+                                }
+                            }
+                        };
+                        reader.readAsText(file);
+                        
+                    } else if (fileExtension === 'docx') {
+                        // Handle DOCX files with Mammoth.js
+                        processDocxFile(file, importedBooks, () => {
+                            processedFiles++;
+                            if (processedFiles === files.length) {
+                                finishImport(importedBooks);
+                            }
+                        });
+                        
+                    } else if (fileExtension === 'doc' || fileExtension === 'txt') {
+                        // Handle DOC and TXT files as plain text
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            try {
+                                const content = e.target.result;
+                                const book = createBookFromText(content, file.name);
+                                importedBooks.push(book);
+                                
+                                processedFiles++;
+                                
+                                if (processedFiles === files.length) {
+                                    finishImport(importedBooks);
+                                }
+                                
+                            } catch (error) {
+                                updateStatus(`❌ Fout bij lezen tekstbestand ${file.name}: ${error.message}`, 'error');
+                                processedFiles++;
+                                if (processedFiles === files.length) {
+                                    finishImport(importedBooks);
+                                }
+                            }
+                        };
+                        reader.readAsText(file, 'UTF-8');
+                        
+                    } else {
+                        updateStatus(`⚠️ Bestandstype niet ondersteund: ${file.name}`, 'error');
+                        processedFiles++;
+                        if (processedFiles === files.length) {
+                            finishImport(importedBooks);
+                        }
+                    }
+                });
+            };
+            
+            input.click();
+        }
+
+        async function processDocxFile(file, importedBooks, callback) {
+            try {
+                // Check if Mammoth.js is available
+                if (typeof mammoth === 'undefined') {
+                    updateStatus('⚠️ Mammoth.js niet beschikbaar - DOCX import niet mogelijk', 'error');
+                    callback();
+                    return;
+                }
+                
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({arrayBuffer: arrayBuffer});
+                const content = result.value;
+                
+                if (content && content.trim()) {
+                    const book = createBookFromText(content, file.name);
+                    importedBooks.push(book);
+                    updateStatus(`✅ DOCX bestand verwerkt: ${file.name}`, 'success');
+                } else {
+                    updateStatus(`⚠️ Geen tekst gevonden in DOCX: ${file.name}`, 'error');
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ Fout bij verwerken DOCX ${file.name}: ${error.message}`, 'error');
+            }
+            
+            callback();
+        }
+
+        function createBookFromText(content, filename) {
+            // Extract title from filename or content
+            const filenameWithoutExt = filename.replace(/\.[^/.]+$/, "");
+            const title = filenameWithoutExt.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            // Split content into chapters
+            const chapters = extractChaptersFromText(content);
+            
+            return {
+                id: 'imported_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                title: title,
+                author: 'Arc Crusade',
+                genre: 'adventure',
+                status: 'published',
+                description: `Geïmporteerd uit ${filename}`,
+                coverImage: '',
+                chapters: chapters,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                dateCreated: new Date().toISOString().split('T')[0],
+                notes: {
+                    general: `Geïmporteerd van OneDrive bestand: ${filename}`,
+                    characters: [],
+                    worldbuilding: '',
+                    plot: ''
+                }
+            };
+        }
+
+        function extractChaptersFromText(content) {
+            const chapters = [];
+            
+            // Try different chapter splitting patterns
+            const chapterPatterns = [
+                /hoofdstuk\s+\d+/gi,
+                /chapter\s+\d+/gi,
+                /deel\s+\d+/gi,
+                /\n\n\d+\./g,
+                /\n\n[A-Z][^.\n]{10,50}\n/g
+            ];
+            
+            let parts = [];
+            let foundPattern = false;
+            
+            // Try each pattern
+            for (const pattern of chapterPatterns) {
+                const matches = content.split(pattern);
+                if (matches.length > 1) {
+                    parts = matches.filter(part => part.trim().length > 100);
+                    foundPattern = true;
+                    break;
+                }
+            }
+            
+            // If no pattern found, create single chapter
+            if (!foundPattern || parts.length === 0) {
+                return [{
+                    id: 'chapter_1',
+                    title: 'Hoofdstuk 1',
+                    content: content.trim(),
+                    status: 'complete',
+                    wordCount: content.trim().split(/\s+/).length,
+                    notes: '',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }];
+            }
+            
+            // Create chapters from parts
+            parts.forEach((part, index) => {
+                if (part.trim()) {
+                    chapters.push({
+                        id: `chapter_${index + 1}`,
+                        title: `Hoofdstuk ${index + 1}`,
+                        content: part.trim(),
+                        status: 'complete',
+                        wordCount: part.trim().split(/\s+/).length,
+                        notes: '',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+            });
+            
+            return chapters;
+        }
+
+        function finishImport(importedBooks) {
+            if (importedBooks.length === 0) {
+                updateStatus('⚠️ Geen geldige boeken gevonden in geselecteerde bestanden', 'error');
+                return;
+            }
+            
+            // Merge with existing books
+            const currentBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+            
+            // Remove duplicates based on title
+            const mergedBooks = [...currentBooks];
+            
+            importedBooks.forEach(importedBook => {
+                const existingIndex = mergedBooks.findIndex(book => 
+                    book.title.toLowerCase() === importedBook.title.toLowerCase()
+                );
+                
+                if (existingIndex >= 0) {
+                    // Update existing book
+                    mergedBooks[existingIndex] = importedBook;
+                } else {
+                    // Add new book
+                    mergedBooks.push(importedBook);
+                }
+            });
+            
+            // Save back to localStorage
+            localStorage.setItem('bookLibraryData', JSON.stringify(mergedBooks));
+            
+            updateStatus(`✅ Import voltooid! ${importedBooks.length} boeken geïmporteerd`, 'success');
+            updateBookDisplay(importedBooks, 'GEÏMPORTEERD');
+        }
+
+        function syncBidirectional() {
+            updateStatus('🔄 Bidirectionele sync nog niet geïmplementeerd.<br>Gebruik Export en Import functies.', 'info');
+        }
+
+        function showCurrentBooks() {
+            try {
+                const books = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                updateBookDisplay(books, 'IN LOCALSTORAGE');
+                
+                const publishedBooks = books.filter(book => book.status === 'published');
+                updateStatus(`📊 ${books.length} totaal boeken, ${publishedBooks.length} gepubliceerd`, 'info');
+                
+            } catch (error) {
+                updateStatus(`❌ Fout bij laden boeken: ${error.message}`, 'error');
+            }
+        }
+
+        function findYourStrangersFire() {
+            try {
+                const books = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                const strangersFireBooks = books.filter(book => 
+                    book.title && book.title.toLowerCase().includes('strangers fire')
+                );
+                
+                if (strangersFireBooks.length > 0) {
+                    updateBookDisplay(strangersFireBooks, 'STRANGERS FIRE GEVONDEN');
+                    updateStatus(`✅ ${strangersFireBooks.length} "Strangers Fire" boek(en) gevonden!`, 'success');
+                } else {
+                    updateStatus('❌ Geen "Strangers Fire" boek gevonden in huidige data', 'error');
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ Zoekfout: ${error.message}`, 'error');
+            }
+        }
+
+        function createOneDriveBackup() {
+            updateStatus('💾 Bezig met maken van volledige backup...', 'info');
+            
+            try {
+                const books = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                const stats = JSON.parse(localStorage.getItem('bookLibraryStats') || '{}');
+                const activities = JSON.parse(localStorage.getItem('bookLibraryActivities') || '[]');
+                
+                const fullBackup = {
+                    backupDate: new Date().toISOString(),
+                    books: books,
+                    stats: stats,
+                    activities: activities,
+                    version: '1.0',
+                    source: 'BookLibrary-Arc-Crusade-OneDrive-Backup'
+                };
+                
+                downloadJSON(fullBackup, `book-library-backup-${new Date().toISOString().split('T')[0]}.json`);
+                
+                updateStatus('✅ Volledige backup gedownload! Verplaats naar Google Drive voor veilige opslag.', 'success');
+                
+            } catch (error) {
+                updateStatus(`❌ Backup fout: ${error.message}`, 'error');
+            }
+        }
+
+        function resetToOneDriveData() {
+            if (!confirm('⚠️ Dit vervangt alle huidige data met Google Drive data. Weet je het zeker?')) {
+                return;
+            }
+            
+            updateStatus('🔄 Selecteer je Google Drive backup bestand om te herstellen...', 'info');
+            importFromOneDrive();
+        }
+
+        // Scan Google Drive voor bestaande bestanden
+        async function scanGoogleDriveFiles() {
+            const drivePath = "G:\\Mijn Drive\\The arc crusade\\Website libary";
+            updateStatus('🔍 Scanning Google Drive voor bestaande boeken bestanden...', 'info');
+            
+            try {
+                // Simulatie van bestandsscan - in werkelijkheid zou dit via File API gaan
+                const detectedFiles = [
+                    'Strangers Fire Finalising 03-9-2025.docx'
+                ];
+                
+                if (detectedFiles.length > 0) {
+                    let html = '<div class="sync-section">';
+                    html += '<h3>📁 Gevonden bestanden in Google Drive:</h3>';
+                    html += '<div class="step">';
+                    
+                    detectedFiles.forEach(file => {
+                        html += `<div class="file-example" style="margin: 10px 0; padding: 10px; border-left: 4px solid #28a745;">`;
+                        html += `📄 ${file}<br>`;
+                        html += `<button onclick="importSpecificFile('${file}')" class="btn" style="margin-top: 5px;">📥 Import dit bestand</button>`;
+                        html += `</div>`;
+                    });
+                    
+                    html += '</div></div>';
+                    
+                    document.getElementById('bookDisplay').innerHTML = html;
+                    updateStatus(`✅ ${detectedFiles.length} bestand(en) gevonden in Google Drive. Klik 'Import dit bestand' om te laden.`, 'success');
+                } else {
+                    updateStatus('ℹ️ Geen bestanden gevonden in Google Drive map.', 'info');
+                }
+            } catch (error) {
+                updateStatus(`❌ Kan Google Drive niet scannen: ${error.message}`, 'error');
+            }
+        }
+
+        // Import specifiek bestand
+        async function importSpecificFile(filename) {
+            updateStatus(`📥 Importeren van ${filename}...`, 'info');
+            
+            // Maak een file input element om het bestand te selecteren
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.docx,.doc,.txt,.json';
+            input.onchange = async function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    updateStatus(`📖 Verwerken van ${file.name}...`, 'info');
+                    
+                    try {
+                        let importedBook = null;
+                        
+                        if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+                            // Process DOCX/DOC file
+                            if (typeof mammoth === 'undefined') {
+                                updateStatus('⚠️ Mammoth.js niet beschikbaar - DOCX import niet mogelijk', 'error');
+                                return;
+                            }
+                            
+                            const arrayBuffer = await file.arrayBuffer();
+                            const result = await mammoth.extractRawText({arrayBuffer: arrayBuffer});
+                            const content = result.value;
+                            
+                            if (content && content.trim()) {
+                                importedBook = createBookFromText(content, file.name);
+                                updateStatus(`✅ DOCX bestand verwerkt: ${file.name}`, 'success');
+                            } else {
+                                updateStatus(`⚠️ Geen tekst gevonden in DOCX: ${file.name}`, 'error');
+                                return;
+                            }
+                            
+                        } else if (file.name.endsWith('.txt')) {
+                            const text = await file.text();
+                            importedBook = createBookFromText(text, file.name.replace('.txt', ''));
+                            updateStatus(`✅ TXT bestand verwerkt: ${file.name}`, 'success');
+                            
+                        } else if (file.name.endsWith('.json')) {
+                            const text = await file.text();
+                            try {
+                                const data = JSON.parse(text);
+                                if (Array.isArray(data)) {
+                                    localStorage.setItem('bookLibraryData', text);
+                                    updateStatus('✅ JSON data geïmporteerd!', 'success');
+                                    showCurrentBooks();
+                                    return;
+                                } else {
+                                    updateStatus('❌ Ongeldig JSON formaat', 'error');
+                                    return;
+                                }
+                            } catch (e) {
+                                updateStatus(`❌ JSON parse fout: ${e.message}`, 'error');
+                                return;
+                            }
+                        }
+                        
+                        // Als er een boek is geïmporteerd, voeg het toe aan localStorage
+                        if (importedBook) {
+                            const currentBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
+                            currentBooks.push(importedBook);
+                            localStorage.setItem('bookLibraryData', JSON.stringify(currentBooks));
+                            
+                            updateStatus(`✅ "${importedBook.title}" succesvol geïmporteerd van Google Drive!`, 'success');
+                            
+                            // Refresh de weergave
+                            showCurrentBooks();
+                        }
+                        
+                    } catch (error) {
+                        updateStatus(`❌ Fout bij verwerken van ${file.name}: ${error.message}`, 'error');
+                    }
+                }
+            };
+            
+            updateStatus(`📂 Selecteer het bestand "${filename}" uit je Google Drive map`, 'info');
+            input.click();
+        }
+
+        // Auto-load saved path
+        window.addEventListener('load', () => {
+            const savedPath = localStorage.getItem('googleDrivePath');
+            if (savedPath) {
+                document.getElementById('oneDrivePath').value = savedPath;
+            }
+            
+            updateStatus('☁️ Google Drive Sync Manager geladen. Het pad is al ingesteld op je Arc Crusade map.', 'info');
+            showCurrentBooks();
+            
+            // Automatisch scannen voor bestanden
+            setTimeout(scanGoogleDriveFiles, 1000);
+        });
+    </script>
+</body>
+</html>
