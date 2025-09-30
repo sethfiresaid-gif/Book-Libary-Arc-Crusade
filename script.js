@@ -865,24 +865,73 @@ class BookLibrary {
                 timestamp: new Date().toISOString()
             });
             
-            // Save with timestamp for debugging
+            // Check storage size before saving
+            const dataSize = JSON.stringify(this.books).length;
+            console.log(`📊 Data size: ${(dataSize / 1024).toFixed(2)} KB`);
+            
+            // If data is too large, show warning and try to clean up
+            if (dataSize > 4 * 1024 * 1024) { // 4MB threshold
+                console.warn('⚠️ Data approaching localStorage limit. Consider using smaller images or URLs.');
+                this.cleanupLargeImages();
+            }
+            
             const dataToSave = {
                 books: this.books,
                 lastSaved: new Date().toISOString(),
                 source: 'admin'
             };
             
+            // Save essential data first
             localStorage.setItem('bookLibraryData', JSON.stringify(this.books));
-            localStorage.setItem('bookLibraryDataBackup', JSON.stringify(dataToSave));
-            localStorage.setItem('bookLibraryStats', JSON.stringify(this.stats));
-            localStorage.setItem('bookLibraryActivities', JSON.stringify(this.activities));
             localStorage.setItem('bookLibraryTheme', this.theme);
             localStorage.setItem('bookLibraryCurrentView', this.currentView);
             localStorage.setItem('viewMode', this.viewMode);
             
+            // Try to save backup and additional data
+            try {
+                localStorage.setItem('bookLibraryDataBackup', JSON.stringify(dataToSave));
+                localStorage.setItem('bookLibraryStats', JSON.stringify(this.stats));
+                localStorage.setItem('bookLibraryActivities', JSON.stringify(this.activities));
+            } catch (backupError) {
+                console.warn('⚠️ Could not save backup data due to storage limits');
+                // Remove backup to free space
+                localStorage.removeItem('bookLibraryDataBackup');
+            }
+            
             console.log('✅ Data saved successfully!');
         } catch (error) {
             console.error('❌ Failed to save data to localStorage:', error);
+            
+            // Try to save minimal data
+            try {
+                const minimalBooks = this.books.map(book => ({
+                    ...book,
+                    coverUrl: book.coverUrl && book.coverUrl.startsWith('data:') ? '' : book.coverUrl
+                }));
+                localStorage.setItem('bookLibraryData', JSON.stringify(minimalBooks));
+                console.log('💾 Saved minimal data without large images');
+                alert('Opslag bijna vol! Grote afbeeldingen zijn weggelaten. Gebruik kleinere afbeeldingen of URLs.');
+            } catch (minimalError) {
+                console.error('❌ Even minimal save failed:', minimalError);
+                alert('Opslag vol! Probeer afbeeldingen te verkleinen of URLs te gebruiken in plaats van uploads.');
+            }
+        }
+    }
+
+    cleanupLargeImages() {
+        console.log('🧹 Cleaning up large base64 images...');
+        let cleaned = 0;
+        
+        this.books.forEach(book => {
+            if (book.coverUrl && book.coverUrl.startsWith('data:') && book.coverUrl.length > 100000) {
+                console.log(`🗑️ Removing large image from book: ${book.title}`);
+                book.coverUrl = '';
+                cleaned++;
+            }
+        });
+        
+        if (cleaned > 0) {
+            console.log(`✅ Cleaned ${cleaned} large images to free storage space`);
         }
     }
 
