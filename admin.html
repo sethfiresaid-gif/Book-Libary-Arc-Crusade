@@ -266,10 +266,32 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="bookCover">Cover URL (optioneel)</label>
-                        <input type="url" id="bookCover" name="coverUrl" placeholder="https://voorbeeld.com/cover.jpg">
-                        <div class="cover-preview" id="coverPreview" style="display: none;">
-                            <img id="coverImage" src="" alt="Book cover preview">
+                        <label for="bookCover">📖 Cover Afbeelding</label>
+                        <div class="cover-upload-section">
+                            <!-- File Upload -->
+                            <div class="upload-option">
+                                <label for="coverFileInput" class="upload-label">
+                                    <i class="fas fa-upload"></i>
+                                    Bestand Uploaden
+                                </label>
+                                <input type="file" id="coverFileInput" accept="image/*" style="display: none;">
+                                <small class="upload-hint">JPG, PNG, GIF (max 5MB)</small>
+                            </div>
+                            
+                            <!-- URL Option -->
+                            <div class="upload-option">
+                                <input type="url" id="bookCover" name="coverUrl" placeholder="Of plak een afbeelding URL...">
+                            </div>
+                            
+                            <!-- Preview -->
+                            <div class="cover-preview" id="coverPreview" style="display: none;">
+                                <img id="coverImage" src="" alt="Book cover preview">
+                                <div class="cover-actions">
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="removeCover()">
+                                        <i class="fas fa-trash"></i> Verwijderen
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -698,8 +720,167 @@ Veel schrijfplezier!"></textarea>
         </div>
     </div>
 
+    <style>
+        /* Cover Upload Styling */
+        .cover-upload-section {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .upload-option {
+            margin: 15px 0;
+        }
+        
+        .upload-label {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-weight: 500;
+        }
+        
+        .upload-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .upload-hint {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .cover-preview {
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .cover-preview img {
+            max-width: 200px;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            object-fit: cover;
+        }
+        
+        .cover-actions {
+            margin-top: 10px;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .upload-option input[type="url"] {
+            width: 100%;
+            max-width: 400px;
+            margin: 10px auto;
+            display: block;
+        }
+    </style>
+
     <!-- Mammoth.js for DOCX processing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="script.js"></script>
+    
+    <script>
+        // Cover Upload Functionality
+        let currentCoverFile = null;
+        
+        document.getElementById('coverFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('Alleen afbeeldingen zijn toegestaan (JPG, PNG, GIF)');
+                    return;
+                }
+                
+                // Validate file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Afbeelding is te groot. Maximum grootte is 5MB.');
+                    return;
+                }
+                
+                currentCoverFile = file;
+                
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    showCoverPreview(e.target.result);
+                };
+                reader.readAsDataURL(file);
+                
+                // Hide URL option
+                document.querySelector('.url-option').style.display = 'none';
+            }
+        });
+        
+        document.getElementById('coverUrlInput').addEventListener('input', function(e) {
+            if (e.target.value.trim()) {
+                showCoverPreview(e.target.value);
+                currentCoverFile = null; // Clear file if URL is used
+            } else {
+                hideCoverPreview();
+            }
+        });
+        
+        function showCoverPreview(src) {
+            const preview = document.getElementById('coverPreview');
+            const img = preview.querySelector('img');
+            img.src = src;
+            preview.style.display = 'block';
+        }
+        
+        function hideCoverPreview() {
+            document.getElementById('coverPreview').style.display = 'none';
+        }
+        
+        function removeCover() {
+            currentCoverFile = null;
+            document.getElementById('coverFileInput').value = '';
+            document.getElementById('coverUrlInput').value = '';
+            hideCoverPreview();
+            document.querySelector('.url-option').style.display = 'block';
+        }
+        
+        function convertToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Modified book creation to handle cover uploads
+        async function getCoverData() {
+            if (currentCoverFile) {
+                try {
+                    return await convertToBase64(currentCoverFile);
+                } catch (error) {
+                    console.error('Error converting cover to base64:', error);
+                    return '';
+                }
+            } else if (document.getElementById('coverUrlInput').value.trim()) {
+                return document.getElementById('coverUrlInput').value.trim();
+            }
+            return '';
+        }
+        
+        // Reset cover when modal closes
+        document.getElementById('bookModal').addEventListener('hidden.bs.modal', function() {
+            removeCover();
+        });
+    </script>
 </body>
 </html>

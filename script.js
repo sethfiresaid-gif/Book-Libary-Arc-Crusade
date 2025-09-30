@@ -112,9 +112,6 @@ class BookLibrary {
         document.getElementById('bookForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
         document.getElementById('chapterForm')?.addEventListener('submit', (e) => this.handleChapterSubmit(e));
         
-        // Cover preview
-        document.getElementById('bookCover').addEventListener('input', (e) => this.previewCover(e.target.value));
-        
         // View toggle
         document.getElementById('toggleViewBtn').addEventListener('click', () => this.toggleView());
         
@@ -247,22 +244,34 @@ class BookLibrary {
         document.getElementById('bookDescription').value = book.description || '';
         document.getElementById('bookPages').value = book.pages || '';
         document.getElementById('bookProgress').value = book.progress || 0;
-        document.getElementById('bookCover').value = book.coverUrl || '';
         
+        // Handle cover URL for editing
         if (book.coverUrl) {
-            this.previewCover(book.coverUrl);
+            if (book.coverUrl.startsWith('data:')) {
+                // It's a base64 image, show preview but can't put in URL field
+                showCoverPreview(book.coverUrl);
+                document.getElementById('coverUrlInput').value = '';
+            } else {
+                // It's a URL, put in URL field
+                document.getElementById('coverUrlInput').value = book.coverUrl;
+                showCoverPreview(book.coverUrl);
+            }
         }
     }
 
     resetForm() {
         document.getElementById('bookForm').reset();
-        document.getElementById('coverPreview').style.display = 'none';
+        removeCover(); // Use our new cover reset function
     }
 
-    handleFormSubmit(e) {
+    async handleFormSubmit(e) {
         e.preventDefault();
         
         const formData = new FormData(e.target);
+        
+        // Get cover data from our new upload system
+        const coverUrl = await getCoverData();
+        
         const bookData = {
             title: formData.get('title').trim(),
             author: formData.get('author').trim() || 'Arc Crusade',
@@ -271,7 +280,7 @@ class BookLibrary {
             description: formData.get('description').trim(),
             pages: parseInt(formData.get('pages')) || 0,
             progress: Math.min(100, Math.max(0, parseInt(formData.get('progress')) || 0)),
-            coverUrl: formData.get('coverUrl').trim()
+            coverUrl: coverUrl
         };
 
         if (!bookData.title) {
@@ -657,31 +666,7 @@ class BookLibrary {
         this.closeModal('deleteModal');
     }
 
-    previewCover(url) {
-        const preview = document.getElementById('coverPreview');
-        const image = document.getElementById('coverImage');
-        
-        if (url && this.isValidUrl(url)) {
-            image.src = url;
-            image.onload = () => {
-                preview.style.display = 'block';
-            };
-            image.onerror = () => {
-                preview.style.display = 'none';
-            };
-        } else {
-            preview.style.display = 'none';
-        }
-    }
 
-    isValidUrl(string) {
-        try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
-        }
-    }
 
     toggleView() {
         this.viewMode = this.viewMode === 'grid' ? 'list' : 'grid';
