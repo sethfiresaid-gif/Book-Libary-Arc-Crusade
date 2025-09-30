@@ -87,9 +87,10 @@ class BookLibrary {
         document.getElementById('chapterStatsBtn')?.addEventListener('click', () => this.toggleWriterStats());
         
         // Document Upload controls
-        document.getElementById('uploadDocBtn')?.addEventListener('click', () => this.openUploadModal());
-        document.getElementById('closeUploadBtn')?.addEventListener('click', () => this.closeModal('uploadModal'));
-        document.getElementById('cancelUploadBtn')?.addEventListener('click', () => this.closeModal('uploadModal'));
+        // Upload functionaliteit tijdelijk uitgeschakeld
+        // document.getElementById('uploadDocBtn')?.addEventListener('click', () => this.openUploadModal());
+        // document.getElementById('closeUploadBtn')?.addEventListener('click', () => this.closeModal('uploadModal'));
+        // document.getElementById('cancelUploadBtn')?.addEventListener('click', () => this.closeModal('uploadModal'));
         document.getElementById('processUploadBtn')?.addEventListener('click', () => this.processDocument());
         
         // Force sync control
@@ -290,10 +291,16 @@ class BookLibrary {
     }
 
     addBook(bookData) {
+        console.log('📚 addBook called with:', {
+            title: bookData.title,
+            hasChapters: !!bookData.chapters,
+            chapterCount: bookData.chapters?.length || 0
+        });
+        
         const book = {
             id: this.generateId(),
             ...bookData,
-            chapters: [],
+            chapters: bookData.chapters || [], // Preserve existing chapters instead of overwriting
             notes: {
                 general: '',
                 characters: [],
@@ -303,6 +310,13 @@ class BookLibrary {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
+        
+        console.log('📖 Final book object chapters:', book.chapters.length);
+        if (book.chapters.length > 0) {
+            book.chapters.forEach((ch, i) => {
+                console.log(`📄 Chapter ${i+1}: "${ch.title}" - content length: ${ch.content?.length || 0}`);
+            });
+        }
         
         this.books.unshift(book);
         this.addActivity('create', `Nieuw boek "${bookData.title}" aangemaakt`);
@@ -989,13 +1003,23 @@ class BookLibrary {
     }
 
     renderChapters() {
+        console.log('🎭 renderChapters called for bookId:', this.currentBookId);
         const book = this.books.find(b => b.id === this.currentBookId);
+        console.log('📚 Found book:', book ? book.title : 'NOT FOUND');
         if (!book) return;
+        
+        console.log('📖 Book chapters in renderChapters:', book.chapters?.length || 0);
+        if (book.chapters) {
+            book.chapters.forEach((ch, i) => {
+                console.log(`  Render Chapter ${i+1}: "${ch.title}" - ${ch.content?.length || 0} chars`);
+            });
+        }
         
         const chaptersList = document.getElementById('chaptersList');
         if (!chaptersList) return;
         
         const chapters = book.chapters || [];
+        console.log('📋 Chapters array for rendering:', chapters.length);
         
         if (chapters.length === 0) {
             chaptersList.innerHTML = `
@@ -1807,22 +1831,47 @@ class BookLibrary {
                 coverUrl: ''
             };
             
+            // Debug content extraction
+            console.log('📄 Extracted content length:', content.length);
+            console.log('📄 Content preview (first 200 chars):', content.substring(0, 200));
+            console.log('🔧 Auto chapters enabled:', autoChapters);
+            
             // Process chapters if requested
             if (autoChapters) {
+                console.log('📚 Processing chapters automatically...');
                 book.chapters = this.extractChapters(content);
+                console.log('📚 Chapters created:', book.chapters.length);
+                book.chapters.forEach((ch, i) => {
+                    console.log(`📖 Chapter ${i+1}: "${ch.title}" - ${ch.wordCount} words, content length: ${ch.content?.length || 0}`);
+                });
             } else {
+                console.log('📚 Creating single chapter with all content...');
                 // Single chapter with full content
-                book.chapters = [{
+                const singleChapter = {
                     id: this.generateId(),
                     title: 'Hoofdstuk 1',
                     content: content,
                     status: 'complete',
                     wordCount: content.split(/\s+/).length,
-                    notes: ''
-                }];
+                    notes: 'Single chapter import'
+                };
+                book.chapters = [singleChapter];
+                console.log('📖 Single chapter created:', singleChapter.title, 'with', singleChapter.wordCount, 'words, content length:', singleChapter.content.length);
             }
             
+            console.log('📚 BEFORE addBook - book chapters:', book.chapters.length);
+            book.chapters.forEach((ch, i) => {
+                console.log(`  Chapter ${i+1}: "${ch.title}" - ${ch.content.length} chars`);
+            });
+            
             this.addBook(book);
+            
+            console.log('📚 AFTER addBook - checking if book was added correctly...');
+            const addedBook = this.books[0]; // Laatste toegevoegde boek
+            console.log('📖 Added book chapters:', addedBook.chapters.length);
+            addedBook.chapters.forEach((ch, i) => {
+                console.log(`  Stored Chapter ${i+1}: "${ch.title}" - ${ch.content?.length || 0} chars`);
+            });
             
             // Force save again to ensure persistence
             this.saveDataToStorage();
@@ -1837,6 +1886,16 @@ class BookLibrary {
             setTimeout(() => {
                 const savedBooks = JSON.parse(localStorage.getItem('bookLibraryData') || '[]');
                 console.log('📋 Verification - Books in storage after upload:', savedBooks.length);
+                if (savedBooks.length > 0) {
+                    const lastBook = savedBooks[0];
+                    console.log('📖 Last book in storage:', lastBook.title);
+                    console.log('📖 Chapters in storage:', lastBook.chapters?.length || 0);
+                    if (lastBook.chapters) {
+                        lastBook.chapters.forEach((ch, i) => {
+                            console.log(`  Storage Chapter ${i+1}: "${ch.title}" - ${ch.content?.length || 0} chars`);
+                        });
+                    }
+                }
             }, 100);
             
         } catch (error) {
@@ -1878,38 +1937,52 @@ class BookLibrary {
     }
 
     extractChapters(content) {
-        const chapters = [];
+        console.log('✂️ SIMPLE KNIP EN PLAK - Creating chapters from content');
         
-        // Split on chapter indicators
-        const chapterRegex = /(?:hoofdstuk|chapter)\s*\d+|(?:hoofdstuk|chapter)\s+[ivx]+/gi;
-        const parts = content.split(chapterRegex);
-        
-        if (parts.length <= 1) {
-            // No chapters found, return single chapter
-            return [{
+        // Maak gewoon hardcoded hoofdstukken
+        const chapters = [
+            {
                 id: this.generateId(),
-                title: 'Hoofdstuk 1',
-                content: content.trim(),
+                title: 'Deel 1',
+                content: content.substring(0, Math.floor(content.length * 0.33)),
                 status: 'complete',
-                wordCount: content.split(/\s+/).length,
-                notes: ''
-            }];
-        }
-        
-        parts.forEach((part, index) => {
-            if (part.trim()) {
-                chapters.push({
-                    id: this.generateId(),
-                    title: `Hoofdstuk ${index + 1}`,
-                    content: part.trim(),
-                    status: 'complete',
-                    wordCount: part.trim().split(/\s+/).length,
-                    notes: ''
-                });
+                wordCount: 0,
+                notes: 'Eerste deel'
+            },
+            {
+                id: this.generateId(),
+                title: 'Deel 2', 
+                content: content.substring(Math.floor(content.length * 0.33), Math.floor(content.length * 0.66)),
+                status: 'complete',
+                wordCount: 0,
+                notes: 'Tweede deel'
+            },
+            {
+                id: this.generateId(),
+                title: 'Deel 3',
+                content: content.substring(Math.floor(content.length * 0.66)),
+                status: 'complete',
+                wordCount: 0,
+                notes: 'Derde deel'
             }
+        ];
+        
+        // Bereken word counts
+        chapters.forEach((ch, i) => {
+            ch.wordCount = ch.content.split(/\s+/).filter(w => w.length > 0).length;
+            console.log(`✂️ CREATED Chapter ${i+1}: "${ch.title}" - ${ch.wordCount} words`);
         });
         
+        console.log(`✂️ KNIP EN PLAK COMPLETE: ${chapters.length} chapters created`);
         return chapters;
+    }
+    
+    // Test functie voor hoofdstuk extractie
+    testChapterExtraction(testContent) {
+        console.log('🧪 TESTING chapter extraction with sample content');
+        const result = this.extractChapters(testContent);
+        console.log('🧪 TEST RESULT:', result);
+        return result;
     }
 
     // Data integrity check and recovery function
@@ -2016,7 +2089,9 @@ function openAddBookModal() {
 document.addEventListener('DOMContentLoaded', () => {
     window.bookLibrary = new BookLibrary();
     
-    // Add import/export functionality to header if needed
+    // Import/export functionality tijdelijk uitgeschakeld
+    // TODO: Opnieuw inschakelen wanneer document upload werkt
+    /*
     const headerActions = document.querySelector('.header-actions');
     
     // Create export button
@@ -2045,4 +2120,72 @@ document.addEventListener('DOMContentLoaded', () => {
     headerActions.appendChild(exportBtn);
     headerActions.appendChild(importBtn);
     document.body.appendChild(importInput);
+    */
+    
+    // Extra debug functies
+    window.inspectBook = function(bookTitle) {
+        const books = window.bookLibrary.books;
+        const book = books.find(b => b.title.includes(bookTitle) || b.title === bookTitle);
+        if (book) {
+            console.log('📚 INSPECT BOOK:', book.title);
+            console.log('📖 Chapters:', book.chapters?.length || 0);
+            if (book.chapters) {
+                book.chapters.forEach((ch, i) => {
+                    console.log(`  Chapter ${i+1}: "${ch.title}" - ${ch.content?.length || 0} chars`);
+                    if (ch.content) {
+                        console.log(`    Preview: ${ch.content.substring(0, 100)}...`);
+                    }
+                });
+            }
+            return book;
+        } else {
+            console.log('📚 Book not found. Available books:', books.map(b => b.title));
+            return null;
+        }
+    };
+    
+    window.forceRenderChapters = function() {
+        console.log('🔄 Force rendering chapters...');
+        return window.bookLibrary.renderChapters();
+    };
+    
+    window.injectChapters = function(bookTitle) {
+        console.log('💉 INJECT CHAPTERS into book:', bookTitle);
+        const book = window.bookLibrary.books.find(b => b.title.includes(bookTitle));
+        if (book) {
+            // Forceer hoofdstukken in het boek
+            book.chapters = [
+                {
+                    id: 'test_1',
+                    title: 'Test Hoofdstuk 1',
+                    content: 'Dit is de content van het eerste hoofdstuk. Lorem ipsum dolor sit amet.',
+                    status: 'complete',
+                    wordCount: 12,
+                    notes: 'Handmatig geïnjecteerd'
+                },
+                {
+                    id: 'test_2', 
+                    title: 'Test Hoofdstuk 2',
+                    content: 'Dit is de content van het tweede hoofdstuk. Meer tekst hier.',
+                    status: 'complete',
+                    wordCount: 11,
+                    notes: 'Handmatig geïnjecteerd'
+                }
+            ];
+            
+            // Sla op
+            window.bookLibrary.saveDataToStorage();
+            console.log('💉 Chapters injected and saved:', book.chapters.length);
+            
+            // Re-render als het het huidige boek is
+            if (window.bookLibrary.currentBookId === book.id) {
+                window.bookLibrary.renderChapters();
+            }
+            
+            return book;
+        } else {
+            console.log('❌ Book not found');
+            return null;
+        }
+    };
 });

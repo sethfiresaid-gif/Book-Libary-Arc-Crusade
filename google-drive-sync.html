@@ -282,17 +282,34 @@
                     html += '<div style="margin-top: 10px; padding: 10px; background: #f0f8ff; border-radius: 5px;">';
                     html += '<strong>Hoofdstukken:</strong><br>';
                     book.chapters.forEach((chapter, chIndex) => {
+                        console.log(`📖 Chapter ${chIndex + 1} debug:`, {
+                            title: chapter.title,
+                            contentLength: chapter.content?.length || 0,
+                            wordCount: chapter.wordCount,
+                            hasContent: !!chapter.content,
+                            contentPreview: chapter.content?.substring(0, 50) + '...'
+                        });
+                        
                         html += `<div style="margin: 5px 0; padding: 5px; background: white; border-radius: 3px; font-size: 12px;">`;
-                        html += `${chIndex + 1}. <strong>${chapter.title}</strong> (${chapter.wordCount || 0} woorden)`;
-                        if (chapter.content) {
-                            const preview = chapter.content.substring(0, 100) + (chapter.content.length > 100 ? '...' : '');
-                            html += `<br><em>${preview}</em>`;
+                        html += `${chIndex + 1}. <strong>${chapter.title || 'Onbekende titel'}</strong> `;
+                        html += `(${chapter.wordCount || 0} woorden, ${chapter.content?.length || 0} karakters)`;
+                        
+                        if (chapter.content && chapter.content.trim()) {
+                            const preview = chapter.content.trim().substring(0, 150);
+                            html += `<br><em style="color: #666;">${preview}${chapter.content.length > 150 ? '...' : ''}</em>`;
+                        } else {
+                            html += `<br><span style="color: #e74c3c;">⚠️ LEEG HOOFDSTUK - Geen content gevonden</span>`;
                         }
+                        
+                        if (chapter.notes) {
+                            html += `<br><small style="color: #999;">Debug: ${chapter.notes}</small>`;
+                        }
+                        
                         html += `</div>`;
                     });
                     html += '</div>';
                 } else {
-                    html += '<div style="color: #e74c3c; font-style: italic;">⚠️ Geen hoofdstukken gevonden</div>';
+                    html += '<div style="color: #e74c3c; font-style: italic;">⚠️ Geen hoofdstukken array gevonden of lege array</div>';
                 }
                 
                 html += '</div>';
@@ -569,9 +586,17 @@
                             const result = await mammoth.extractRawText({arrayBuffer: arrayBuffer});
                             const content = result.value;
                             
+                            console.log('📄 Extracted DOCX content (first 500 chars):', content?.substring(0, 500));
+                            console.log('📊 Total content length:', content?.length || 0);
+                            
                             if (content && content.trim()) {
                                 importedBook = createBookFromText(content, file.name);
+                                console.log('📚 Created book object:', importedBook);
                                 updateStatus(`✅ DOCX bestand verwerkt: ${file.name} - ${importedBook.chapters.length} hoofdstukken gevonden`, 'success');
+                                
+                                // Toon een preview van de geëxtraheerde tekst
+                                updateStatus(`📄 Eerste 200 karakters van geëxtraheerde tekst:<br>
+                                    <div style="background:#f8f9fa; padding:10px; margin:10px 0; border-radius:5px; font-family:monospace; font-size:12px; white-space:pre-wrap; max-height:100px; overflow-y:auto;">${content.substring(0, 200)}...</div>`, 'info');
                             } else {
                                 updateStatus(`⚠️ Geen tekst gevonden in DOCX: ${file.name}`, 'error');
                                 return;
@@ -653,124 +678,111 @@
         }
 
         function extractChaptersFromText(content) {
-            console.log('🔍 Starting chapter extraction from content length:', content.length);
+            console.log('🔍 Starting NEW chapter extraction from content length:', content.length);
+            console.log('📄 First 300 characters of content:', content.substring(0, 300));
             
-            const lines = content.split('\n');
+            // Eenvoudige maar effectieve aanpak
             const chapters = [];
-            let currentChapter = null;
             
-            // Verbeterde hoofdstuk patterns - meer flexibel
-            const chapterPatterns = [
-                // Standaard formats
-                /^(chapter|hoofdstuk|chapitre|kapittel)\s*(\d+|[ivxlcdm]+)[\s\:\-\.]*/i,
-                /^(deel|part|section|sectie)\s*(\d+|[ivxlcdm]+)[\s\:\-\.]*/i,
-                
-                // Nummering alleen
-                /^\d+[\.\)\-\s]/,                    // 1., 2), 3 -, 4 (space)
-                /^[ivxlcdm]+[\.\)\-\s]/i,            // I., II), III -, IV (space)
-                
-                // Met tekst
-                /^(chapter|hoofdstuk)\s+[\w\s]+$/i,   // Chapter One, Hoofdstuk Een
-                
-                // Speciale formats
-                /^#{1,6}\s*(chapter|hoofdstuk|deel)/i, // Markdown headers
-                /^\*+\s*(chapter|hoofdstuk|deel)/i,    // Star headers
+            // Probeer eerst op basis van woorden als "Chapter", "Hoofdstuk", etc.
+            const simplePatterns = [
+                /^(chapter|hoofdstuk|chapitre)\s+\d+/i,
+                /^(deel|part)\s+\d+/i,
+                /^\d+\.\s+/,
+                /^hoofdstuk\s+[ivx]+/i,
+                /^chapter\s+[ivx]+/i
             ];
             
-            let foundChapters = false;
-            let chapterCount = 0;
+            // Split de tekst op basis van deze patronen
+            const lines = content.split('\n');
+            let currentChapter = null;
+            let chapterIndex = 0;
             
-            console.log('📄 Processing', lines.length, 'lines');
+            console.log(`📄 Processing ${lines.length} lines`);
             
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const trimmedLine = line.trim();
+                const line = lines[i].trim();
                 
-                if (!trimmedLine) continue; // Skip empty lines
+                if (!line) continue; // Skip lege regels
                 
-                // Test alle patterns
-                let isChapterHeader = false;
-                let matchedPattern = null;
-                
-                for (let j = 0; j < chapterPatterns.length; j++) {
-                    const pattern = chapterPatterns[j];
-                    if (pattern.test(trimmedLine)) {
-                        // Extra checks voor valse positieven
-                        if (trimmedLine.length < 200 && // Niet te lang
-                            !trimmedLine.includes('.') || trimmedLine.startsWith('Chapter') || trimmedLine.startsWith('Hoofdstuk')) {
-                            isChapterHeader = true;
-                            matchedPattern = j;
-                            break;
-                        }
+                // Check of deze regel een hoofdstuk header is
+                let isHeader = false;
+                for (let pattern of simplePatterns) {
+                    if (pattern.test(line) && line.length < 150) {
+                        isHeader = true;
+                        break;
                     }
                 }
                 
-                if (isChapterHeader) {
-                    foundChapters = true;
-                    chapterCount++;
+                if (isHeader) {
+                    console.log(`📖 Found chapter: "${line}"`);
                     
-                    console.log(`📖 Found chapter header (pattern ${matchedPattern}): "${trimmedLine}"`);
-                    
-                    // Sla vorige hoofdstuk op
+                    // Sla vorige hoofdstuk op als het content heeft
                     if (currentChapter && currentChapter.content.trim()) {
                         chapters.push(currentChapter);
-                        console.log(`✅ Added chapter: "${currentChapter.title}" (${currentChapter.content.length} chars)`);
+                        console.log(`✅ Saved chapter: "${currentChapter.title}" (${currentChapter.content.trim().length} chars)`);
                     }
                     
                     // Start nieuw hoofdstuk
+                    chapterIndex++;
                     currentChapter = {
-                        id: 'chapter_' + (chapters.length + 1),
-                        title: trimmedLine || `Hoofdstuk ${chapterCount}`,
+                        id: `chapter_${chapterIndex}`,
+                        title: line,
                         content: '',
                         wordCount: 0,
-                        notes: `Matched pattern ${matchedPattern}`
+                        notes: `Detected as chapter header`
                     };
-                    
                 } else {
-                    // Voeg content toe aan huidig hoofdstuk
+                    // Voeg content toe
                     if (currentChapter) {
                         currentChapter.content += line + '\n';
-                    } else if (!foundChapters) {
-                        // Als nog geen hoofdstukken gevonden, maak eerste aan
+                    } else {
+                        // Start eerste hoofdstuk als we nog geen hebben
+                        chapterIndex = 1;
                         currentChapter = {
                             id: 'chapter_1',
-                            title: 'Inleiding',
+                            title: 'Hoofdstuk 1',
                             content: line + '\n',
                             wordCount: 0,
-                            notes: 'Auto-generated first chapter'
+                            notes: 'Auto-created first chapter'
                         };
                     }
                 }
             }
             
-            // Laatste hoofdstuk toevoegen
-            if (currentChapter) {
-                if (currentChapter.content.trim()) {
-                    chapters.push(currentChapter);
-                    console.log(`✅ Added final chapter: "${currentChapter.title}" (${currentChapter.content.length} chars)`);
-                }
+            // Voeg laatste hoofdstuk toe
+            if (currentChapter && currentChapter.content.trim()) {
+                chapters.push(currentChapter);
+                console.log(`✅ Saved final chapter: "${currentChapter.title}" (${currentChapter.content.trim().length} chars)`);
             }
             
-            // Als geen hoofdstukken gevonden, maak één groot hoofdstuk
+            // Als geen hoofdstukken gevonden, maak één hoofdstuk van alles
             if (chapters.length === 0) {
-                console.log('⚠️ No chapters detected, creating single chapter');
+                console.log('⚠️ No chapter headers found, creating single chapter with all content');
                 chapters.push({
                     id: 'chapter_1',
-                    title: 'Volledige Tekst',
-                    content: content,
-                    wordCount: content.split(' ').filter(word => word.length > 0).length,
-                    notes: 'Geen hoofdstuk-markers gevonden - volledige tekst in één hoofdstuk'
+                    title: 'Volledige Document',
+                    content: content.trim(),
+                    wordCount: content.split(' ').filter(w => w.length > 0).length,
+                    notes: 'Geen hoofdstuk headers gevonden - alle content in één hoofdstuk'
                 });
             }
             
-            // Calculate word counts en clean up
+            // Bereken woord aantallen
             chapters.forEach((chapter, index) => {
                 chapter.content = chapter.content.trim();
-                chapter.wordCount = chapter.content.split(' ').filter(word => word.length > 0).length;
-                console.log(`📊 Chapter ${index + 1}: "${chapter.title}" - ${chapter.wordCount} words`);
+                const words = chapter.content.split(/\s+/).filter(word => word.length > 0);
+                chapter.wordCount = words.length;
+                console.log(`📊 Final chapter ${index + 1}: "${chapter.title}" - ${chapter.wordCount} words, ${chapter.content.length} chars`);
             });
             
-            console.log(`✅ Final result: ${chapters.length} chapters created`);
+            console.log(`✅ EXTRACTION COMPLETE: Created ${chapters.length} chapters`);
+            
+            // Extra debug: toon eerste 100 chars van elk hoofdstuk
+            chapters.forEach((ch, i) => {
+                console.log(`📝 Chapter ${i+1} content preview:`, ch.content.substring(0, 100) + '...');
+            });
+            
             return chapters;
         }
 
